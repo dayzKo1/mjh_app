@@ -13,7 +13,10 @@
       <view tt:else class="avatar avatar-default"></view>
     </view>
     <view class="user-info">
-      <text class="nickname">{{userInfo.nickName || '未登录'}}</text>
+      <view class="nickname-row">
+        <text class="nickname">{{userInfo.nickName || '未登录'}}</text>
+        <text class="edit-btn" bindtap="onEditNickname">✏️</text>
+      </view>
       <view class="user-type-tag {{userType === 'A' ? 'type-a' : 'type-b'}}">
         {{userType === 'A' ? '可提现' : '不可提现'}}
       </view>

@@ -122,4 +122,36 @@ Page({
       showCancel: false,
     });
   },
+
+  /**
+   * 编辑昵称
+   */
+  onEditNickname() {
+    const app = getApp();
+    const userId = app.globalData.userId;
+    if (!userId) return;
+
+    tt.showModal({
+      title: '修改昵称',
+      editable: true,
+      placeholderText: '请输入新昵称',
+      content: this.data.userInfo.nickName || '',
+      success: async (res) => {
+        if (res.confirm && res.content) {
+          const nickName = res.content.trim();
+          if (nickName.length > 0 && nickName.length <= 20) {
+            try {
+              await userApi.updateInfo(userId, { nickName });
+              tt.showToast({ title: '昵称修改成功', icon: 'success' });
+              this.loadUserInfo();
+            } catch (error) {
+              tt.showToast({ title: '修改失败', icon: 'none' });
+            }
+          } else {
+            tt.showToast({ title: '昵称长度1-20字', icon: 'none' });
+          }
+        }
+      }
+    });
+  },
 });

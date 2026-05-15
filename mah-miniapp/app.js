@@ -21,16 +21,13 @@ App({
 
     try {
       if (tt.cloud) {
-        tt.cloud.init({
-          env: 'your-env-id',
-          traceUser: true,
-        });
-        console.log('云开发初始化成功');
+        // 抖音云无需初始化，直接使用 tt.cloud
+        console.log('云开发可用');
       } else {
         console.log('当前环境不支持云开发');
       }
     } catch (e) {
-      console.warn('云开发初始化失败:', e.message);
+      console.warn('云开发检查失败:', e.message);
     }
 
     await initAds();

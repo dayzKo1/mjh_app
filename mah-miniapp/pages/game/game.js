@@ -3,7 +3,7 @@
  * 接入云开发API：登录、保存记录、广告上报
  */
 
-const { showRewardedAd, showBannerAd, hideBannerAd, showInterstitialAd } = require('../../utils/ad');
+const { showRewardedAd, showBannerAd, hideBannerAd, showInterstitialAd, preloadInterstitialAd } = require('../../utils/ad');
 const { gameApi, adApi, userApi } = require('../../services/api');
 
 /** 麻将牌类型（与images目录下的文件名对应） */
@@ -213,6 +213,16 @@ Page({
     flyingCardId: null,
     /** 游戏是否已结束 */
     gameOverState: false,
+    /** 过关广告过渡状态 */
+    showAdTransition: false,
+    /** 过关倒计时 */
+    adCountdown: 5,
+    /** 撤销操作历史栈 */
+    undoStack: [],
+    /** 提示剩余次数 */
+    hintCount: 3,
+    /** 当前提示高亮的卡片ID */
+    hintCardId: null,
   },
 
   onLoad(options) {
@@ -257,10 +267,14 @@ Page({
       cards,
       slots: [null, null, null, null, null, null, null],
       animating: false,
-      gameOverState: false
+      gameOverState: false,
+      showAdTransition: false,
+      undoStack: [],
+      hintCount: 3,
     });
 
     this.startTimer();
+    preloadInterstitialAd();
   },
 
   /** 开始计时器 */
@@ -304,6 +318,14 @@ Page({
 
     // 第一步：拾取动画（弹起 + 发光）
     this.playPickupAnimation(card.id, () => {
+      const undoStack = this.data.undoStack.slice();
+      undoStack.push({
+        cards: this.data.cards.map(c => ({ ...c })),
+        slots: this.data.slots.map(s => s ? { ...s } : null),
+        score: this.data.score,
+      });
+      if (undoStack.length > 20) undoStack.shift();
+
       card.status = 1;
       slots[emptyIndex] = card;
       const arranged = arrangeSlots(slots);
@@ -316,6 +338,7 @@ Page({
         slots: arranged,
         cardAnimations,
         flyingCardId: null,
+        undoStack,
       });
 
       // 第二步：直接检查消除（无弹入动画）
@@ -459,15 +482,71 @@ Page({
 
     this.saveGameRecord();
 
-    tt.showModal({
-      title: '恭喜过关!',
-      content: '得分: ' + this.data.score + ', 用时: ' + this.data.time + '秒',
-      showCancel: false,
-      confirmText: '下一关',
-      success: () => {
-        this.nextLevel();
+    this.setData({ showAdTransition: true, adCountdown: 5 });
+
+    this.showLevelAd();
+  },
+
+  /**
+   * 展示过关插屏广告
+   * 广告展示成功后开始倒计时，倒计时结束才能继续
+   * 广告展示失败则跳过广告直接继续
+   */
+  async showLevelAd() {
+    try {
+      const adShown = await showInterstitialAd();
+
+      if (adShown) {
+        const app = getApp();
+        const userId = app.globalData.userId;
+        if (userId) {
+          try {
+            await adApi.report(userId, 'interstitial');
+          } catch (error) {
+            console.warn('插屏广告上报失败:', error.message);
+          }
+        }
       }
-    });
+    } catch (error) {
+      console.warn('插屏广告展示失败:', error.message);
+    }
+
+    this.startAdCountdown();
+  },
+
+  /**
+   * 开始过关倒计时
+   * 倒计时结束后显示继续按钮
+   */
+  startAdCountdown() {
+    let count = 5;
+    this.setData({ adCountdown: count });
+
+    this._adTimer = setInterval(() => {
+      count--;
+      this.setData({ adCountdown: count });
+
+      if (count <= 0) {
+        clearInterval(this._adTimer);
+        this._adTimer = null;
+      }
+    }, 1000);
+  },
+
+  /**
+   * 继续下一关
+   * 倒计时结束后点击继续
+   */
+  continueToNextLevel() {
+    if (this.data.adCountdown > 0) return;
+
+    if (this._adTimer) {
+      clearInterval(this._adTimer);
+      this._adTimer = null;
+    }
+
+    this.setData({ showAdTransition: false });
+    this.nextLevel();
   },
 
   /** 游戏结束 */
@@ -480,7 +559,7 @@ Page({
     tt.showModal({
       title: '游戏结束',
       content: '暂存槽已满，得分: ' + this.data.score,
-      cancelText: '重玩',
+      cancelText: '重新开始',
       confirmText: '再试一次',
       success: (res) => {
         if (res.confirm) {
@@ -491,6 +570,42 @@ Page({
         }
       }
     });
+  },
+
+  /**
+   * 看广告复活 - 清空暂存槽继续游戏
+   */
+  async watchAdForRevive() {
+    if (!this.data.gameOverState) return;
+
+    try {
+      const app = getApp();
+      const userId = app.globalData.userId;
+      const rewarded = await showRewardedAd(userId);
+
+      if (rewarded) {
+        if (userId) {
+          try {
+            await adApi.report(userId, 'rewarded');
+          } catch (error) {
+            console.warn('广告上报失败:', error.message);
+          }
+        }
+
+        this.setData({
+          slots: [null, null, null, null, null, null, null],
+          gameOverState: false,
+        });
+
+        this.startTimer();
+        tt.showToast({ title: '已复活，继续游戏！', icon: 'success' });
+      } else {
+        tt.showToast({ title: '需要看完广告才能复活', icon: 'none' });
+      }
+    } catch (error) {
+      console.warn('广告复活失败:', error.message);
+      tt.showToast({ title: '广告加载失败', icon: 'none' });
+    }
   },
 
   /**
@@ -532,38 +647,89 @@ Page({
     }
   },
 
-  /** 撤销操作 */
+  /** 撤销操作 - 从历史栈恢复上一步状态 */
   undo() {
-    if (this.data.gameOverState) return;
+    if (this.data.animating || this.data.gameOverState) return;
 
-    const slots = this.data.slots.slice();
-    const cards = this.data.cards.slice();
+    const undoStack = this.data.undoStack.slice();
+    if (undoStack.length === 0) {
+      tt.showToast({ title: '没有可撤销的操作', icon: 'none' });
+      return;
+    }
 
-    // 找最后一个非空位置
-    let lastIndex = -1;
-    for (let i = slots.length - 1; i >= 0; i--) {
-      if (slots[i] !== null) {
-        lastIndex = i;
+    const prevState = undoStack.pop();
+
+    this.setData({
+      cards: checkCover(prevState.cards),
+      slots: arrangeSlots(prevState.slots),
+      score: Math.max(0, prevState.score - 1),
+      undoStack,
+    });
+
+    tt.showToast({ title: '已撤销 -1分', icon: 'none' });
+  },
+
+  /** 提示功能 - 高亮一张可点击且能与暂存槽形成三消的卡片 */
+  hint() {
+    if (this.data.animating || this.data.gameOverState) return;
+
+    if (this.data.hintCount <= 0) {
+      tt.showToast({ title: '提示次数已用完', icon: 'none' });
+      return;
+    }
+
+    const cards = this.data.cards;
+    const slots = this.data.slots;
+    const activeSlots = slots.filter(s => s !== null);
+
+    const slotIconCounts = {};
+    activeSlots.forEach(s => {
+      slotIconCounts[s.icon] = (slotIconCounts[s.icon] || 0) + 1;
+    });
+
+    let hintCard = null;
+
+    for (const card of cards) {
+      if (card.status !== 0 || card.isCover) continue;
+      if (slotIconCounts[card.icon] >= 2) {
+        hintCard = card;
         break;
       }
     }
 
-    if (lastIndex === -1) return;
-
-    const card = slots[lastIndex];
-    if (card) {
-      slots[lastIndex] = null;
-      const sceneCard = cards.find(c => c.id === card.id);
-      if (sceneCard) {
-        sceneCard.status = 0;
+    if (!hintCard) {
+      for (const card of cards) {
+        if (card.status !== 0 || card.isCover) continue;
+        if (slotIconCounts[card.icon] >= 1) {
+          hintCard = card;
+          break;
+        }
       }
     }
 
-    this.setData({
-      slots: arrangeSlots(slots),
-      cards: checkCover(cards),
-      score: Math.max(0, this.data.score - 1)
-    });
+    if (!hintCard) {
+      for (const card of cards) {
+        if (card.status !== 0 || card.isCover) continue;
+        hintCard = card;
+        break;
+      }
+    }
+
+    if (hintCard) {
+      this.setData({
+        hintCardId: hintCard.id,
+        hintCount: this.data.hintCount - 1,
+        score: Math.max(0, this.data.score - 1),
+      });
+
+      tt.showToast({ title: `已提示 剩余${this.data.hintCount - 1}次 -1分`, icon: 'none' });
+
+      setTimeout(() => {
+        this.setData({ hintCardId: null });
+      }, 1500);
+    } else {
+      tt.showToast({ title: '没有可提示的卡片', icon: 'none' });
+    }
   },
 
   /** 洗牌 - 打乱剩余卡片的图标，保持每种图标数量仍为3的倍数 */

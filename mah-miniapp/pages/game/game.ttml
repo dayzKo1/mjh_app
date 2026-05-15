@@ -13,7 +13,7 @@
     <view
       tt:for="{{cards}}"
       tt:key="id"
-      class="card {{item.isCover ? 'covered' : ''}} {{item.status === 2 ? 'removed' : ''}} {{item.status === 1 ? 'picked' : ''}}"
+      class="card {{item.isCover ? 'covered' : ''}} {{item.status === 2 ? 'removed' : ''}} {{item.status === 1 ? 'picked' : ''}} {{hintCardId === item.id ? 'hint-highlight' : ''}}"
       data-index="{{index}}"
       bindtap="onCardTap"
       animation="{{cardAnimations[item.id]}}"
@@ -47,8 +47,17 @@
   <!-- 按钮 -->
   <view class="btns">
     <view class="btn" bindtap="undo">撤销</view>
+    <view class="btn" bindtap="hint">提示({{hintCount}})</view>
     <view class="btn" bindtap="shuffle">洗牌</view>
     <view class="btn" bindtap="restartGame">重玩</view>
+  </view>
+
+  <!-- 看广告获道具 -->
+  <view class="ad-rewards" tt:if="{{gameOverState}}">
+    <view class="ad-reward-btn" bindtap="watchAdForRevive">
+      <text class="ad-reward-icon">🎬</text>
+      <text class="ad-reward-text">看广告复活</text>
+    </view>
   </view>
 
   <!-- 导航入口 -->
@@ -76,6 +85,37 @@
         <text class="nav-icon-emoji">🎁</text>
       </view>
       <text class="nav-text">邀请</text>
+    </view>
+  </view>
+
+  <!-- 过关广告过渡界面 -->
+  <view class="ad-transition" tt:if="{{showAdTransition}}">
+    <view class="ad-transition-content">
+      <view class="ad-transition-title">🎉 恭喜过关!</view>
+      <view class="ad-transition-stats">
+        <view class="ad-stat-item">
+          <text class="ad-stat-label">得分</text>
+          <text class="ad-stat-value">{{score}}</text>
+        </view>
+        <view class="ad-stat-item">
+          <text class="ad-stat-label">用时</text>
+          <text class="ad-stat-value">{{time}}秒</text>
+        </view>
+        <view class="ad-stat-item">
+          <text class="ad-stat-label">关卡</text>
+          <text class="ad-stat-value">第{{level}}关</text>
+        </view>
+      </view>
+      <view class="ad-transition-divider"></view>
+      <view class="ad-transition-tip" tt:if="{{adCountdown > 0}}">
+        广告 {{adCountdown}}s 后可继续
+      </view>
+      <view
+        class="ad-continue-btn {{adCountdown > 0 ? 'disabled' : ''}}"
+        bindtap="continueToNextLevel"
+      >
+        {{adCountdown > 0 ? '请等待 ' + adCountdown + 's' : '继续闯关 →'}}
+      </view>
     </view>
   </view>
 </view>

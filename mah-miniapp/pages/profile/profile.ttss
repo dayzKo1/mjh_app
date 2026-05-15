@@ -50,6 +50,17 @@
   margin-bottom: 10rpx;
 }
 
+.nickname-row {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+}
+
+.edit-btn {
+  font-size: 28rpx;
+  opacity: 0.7;
+}
+
 .user-type-tag {
   display: inline-block;
   padding: 4rpx 16rpx;

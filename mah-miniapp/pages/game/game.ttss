@@ -89,6 +89,16 @@
   pointer-events: none;
 }
 
+.hint-highlight {
+  box-shadow: 0 0 20rpx 10rpx rgba(255, 235, 59, 0.8) !important;
+  animation: hintPulse 0.5s ease-in-out 3;
+}
+
+@keyframes hintPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+}
+
 .card-img {
   width: 72rpx;
   height: 96rpx;
@@ -238,4 +248,130 @@
 
 .nav-item:active .nav-text {
   color: #f7e358;
+}
+
+/* ===== 广告道具 ===== */
+.ad-rewards {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  margin-top: 12rpx;
+}
+
+.ad-reward-btn {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  padding: 16rpx 40rpx;
+  background: linear-gradient(135deg, #ff6b35, #f7931e);
+  border-radius: 40rpx;
+  box-shadow: 0 4rpx 12rpx rgba(255, 107, 53, 0.4);
+}
+
+.ad-reward-btn:active {
+  transform: scale(0.95);
+  opacity: 0.8;
+}
+
+.ad-reward-icon {
+  font-size: 32rpx;
+}
+
+.ad-reward-text {
+  font-size: 28rpx;
+  color: #fff;
+  font-weight: bold;
+}
+
+/* ===== 过关广告过渡界面 ===== */
+.ad-transition {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  backdrop-filter: blur(10rpx);
+}
+
+.ad-transition-content {
+  width: 600rpx;
+  background: linear-gradient(180deg, #2d5a2d 0%, #1a3a1a 100%);
+  border-radius: 32rpx;
+  padding: 60rpx 48rpx;
+  text-align: center;
+  border: 2rpx solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 20rpx 60rpx rgba(0, 0, 0, 0.5);
+}
+
+.ad-transition-title {
+  font-size: 48rpx;
+  color: #f7e358;
+  font-weight: bold;
+  margin-bottom: 40rpx;
+  text-shadow: 0 2rpx 8rpx rgba(247, 227, 88, 0.3);
+}
+
+.ad-transition-stats {
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 32rpx;
+}
+
+.ad-stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8rpx;
+}
+
+.ad-stat-label {
+  font-size: 24rpx;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.ad-stat-value {
+  font-size: 36rpx;
+  color: #fff;
+  font-weight: bold;
+}
+
+.ad-transition-divider {
+  height: 2rpx;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  margin: 24rpx 0;
+}
+
+.ad-transition-tip {
+  font-size: 26rpx;
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 32rpx;
+}
+
+.ad-continue-btn {
+  width: 100%;
+  height: 88rpx;
+  line-height: 88rpx;
+  border-radius: 44rpx;
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #fff;
+  background: linear-gradient(180deg, #5cb85c, #449d44);
+  box-shadow: 0 6rpx 20rpx rgba(76, 175, 80, 0.4);
+  transition: all 0.2s ease;
+}
+
+.ad-continue-btn.disabled {
+  background: linear-gradient(180deg, #555, #444);
+  box-shadow: none;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.ad-continue-btn:not(.disabled):active {
+  transform: scale(0.96);
+  box-shadow: 0 3rpx 10rpx rgba(76, 175, 80, 0.3);
 }

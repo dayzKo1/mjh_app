@@ -1,42 +1,40 @@
 /**
- * 云函数调用服务
- * 使用 tt.cloud API 调用抖音云开发云函数
+ * 云容器调用服务
+ * 使用 tt.cloud.callContainer API 调用抖音云开发容器服务
  */
 
 /**
- * 调用云函数
- * 统一错误处理，检查返回code
- * @param {string} name - 云函数名称
+ * 调用抖音云容器服务
+ * @param {string} serviceId - 服务名称
  * @param {string} action - 操作名称
- * @param {Object} data - 参数
- * @returns {Promise<Object>} 云函数返回结果
+ * @param {Object} data - 业务参数
+ * @returns {Promise<Object>} 返回结果
  */
-function callCloudFunction(name, action, data = {}) {
+function callCloudFunction(serviceId, action, data = {}) {
   return new Promise((resolve, reject) => {
     if (!tt.cloud) {
       reject(new Error('云开发不可用'));
       return;
     }
 
-    tt.cloud.callFunction({
-      name,
-      data: {
-        action,
-        ...data,
+    tt.cloud.callContainer({
+      serviceId,
+      path: '/',
+      init: {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: { action, ...data },
       },
       success: (res) => {
-        const result = res.result || {};
-        if (result.code === 0) {
+        if (res.statusCode === 200 && res.data) {
+          const result = typeof res.data === 'string' ? JSON.parse(res.data) : res.data;
           resolve(result);
         } else {
-          const err = new Error(result.message || '操作失败');
-          err.code = result.code;
-          reject(err);
+          reject(new Error(`请求失败: ${res.statusCode}`));
         }
       },
       fail: (err) => {
-        console.error(`云函数 ${name}/${action} 调用失败:`, err);
-        reject(new Error(err.errMsg || '网络请求失败'));
+        reject(new Error(err.errMsg || '请求失败'));
       },
     });
   });

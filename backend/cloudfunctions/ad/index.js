@@ -70,6 +70,24 @@ exports.report = async (event) => {
     if (adType === 'rewarded') {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
+
+      const record = {
+        userId,
+        adType,
+        reward: 0,
+        createTime: db.serverDate(),
+      };
+
+      if (AD_CONFIG.rewarded.reward > 0 && user.userType === 'A') {
+        record.reward = AD_CONFIG.rewarded.reward;
+        log.info('report', 'A类用户获得激励视频奖励', { userId, reward: record.reward });
+      } else if (user.userType !== 'A') {
+        log.debug('report', 'B类用户无奖励', { userId, userType: user.userType });
+      }
+
+      await adRecordsCollection.add(record);
+      log.info('report', '广告记录已保存', { userId, adType, reward: record.reward });
+
       const todayRecords = await adRecordsCollection
         .where({
           userId,
@@ -80,13 +98,29 @@ exports.report = async (event) => {
 
       log.debug('report', '今日激励视频观看次数', { userId, count: todayRecords.total, limit: AD_CONFIG.rewarded.dailyLimit });
 
-      if (todayRecords.total >= AD_CONFIG.rewarded.dailyLimit) {
-        log.warn('report', '今日激励视频观看次数已达上限', { userId, count: todayRecords.total });
+      if (todayRecords.total > AD_CONFIG.rewarded.dailyLimit) {
+        await adRecordsCollection.doc(record._id || record.id).remove();
+        log.warn('report', '今日激励视频观看次数超限，回滚记录', { userId, count: todayRecords.total });
         return {
           code: -1,
           message: '今日观看次数已达上限',
         };
       }
+
+      if (record.reward > 0) {
+        await usersCollection.doc(userId).update({
+          commission: _.inc(record.reward),
+          updateTime: db.serverDate(),
+        });
+        log.info('report', '佣金已发放', { userId, reward: record.reward });
+      }
+
+      log.success('report', '广告上报成功', { userId, adType, reward: record.reward });
+      return {
+        code: 0,
+        message: '上报成功',
+        data: { reward: record.reward },
+      };
     }
 
     const record = {
@@ -96,30 +130,15 @@ exports.report = async (event) => {
       createTime: db.serverDate(),
     };
 
-    if (adType === 'rewarded' && AD_CONFIG.rewarded.reward > 0 && user.userType === 'A') {
-      record.reward = AD_CONFIG.rewarded.reward;
-      log.info('report', 'A类用户获得激励视频奖励', { userId, reward: record.reward });
-    } else if (adType === 'rewarded' && user.userType !== 'A') {
-      log.debug('report', 'B类用户无奖励', { userId, userType: user.userType });
-    }
-
     await adRecordsCollection.add(record);
-    log.info('report', '广告记录已保存', { userId, adType, reward: record.reward });
+    log.info('report', '广告记录已保存', { userId, adType });
 
-    if (record.reward > 0) {
-      await usersCollection.doc(userId).update({
-        commission: _.inc(record.reward),
-        updateTime: db.serverDate(),
-      });
-      log.info('report', '佣金已发放', { userId, reward: record.reward });
-    }
-
-    log.success('report', '广告上报成功', { userId, adType, reward: record.reward });
+    log.success('report', '广告上报成功', { userId, adType });
     return {
       code: 0,
       message: '上报成功',
       data: {
-        reward: record.reward,
+        reward: 0,
       },
     };
   } catch (error) {

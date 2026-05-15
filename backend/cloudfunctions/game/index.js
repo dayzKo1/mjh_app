@@ -165,62 +165,52 @@ async function calculateCommission(userId, amount, userData) {
       createTime: db.serverDate(),
     };
 
-    const level1Id = userData.inviterId;
-    log.debug('calculateCommission', '查询一级邀请人', { userId, level1Id });
-    const level1User = await usersCollection.doc(level1Id).get();
+    // 扁平化逐级独立检查：每级独立判断是否A类，上级不发放不影响下级
+    const inviterChain = [];
+    let currentInviterId = userData.inviterId;
 
-    if (level1User.data && level1User.data.userType === 'A') {
-      const commission1 = Math.round(amount * 0.1 * 0.01 * 100) / 100;
-      log.info('calculateCommission', '一级分佣', { userId, level1Id, commission: commission1, rate: '10%' });
+    for (let depth = 0; depth < 3 && currentInviterId; depth++) {
+      log.debug('calculateCommission', `查询第${depth + 1}级邀请人`, { userId, inviterId: currentInviterId });
+      const inviterUser = await usersCollection.doc(currentInviterId).get();
 
-      await usersCollection.doc(level1Id).update({
-        commission: _.inc(commission1),
-        updateTime: db.serverDate(),
-      });
-      commissionRecord.level1Id = level1Id;
-      commissionRecord.level1Amount = commission1;
-
-      if (level1User.data.inviterId) {
-        const level2Id = level1User.data.inviterId;
-        log.debug('calculateCommission', '查询二级邀请人', { userId, level2Id });
-        const level2User = await usersCollection.doc(level2Id).get();
-
-        if (level2User.data && level2User.data.userType === 'A') {
-          const commission2 = Math.round(amount * 0.05 * 0.01 * 100) / 100;
-          log.info('calculateCommission', '二级分佣', { userId, level2Id, commission: commission2, rate: '5%' });
-
-          await usersCollection.doc(level2Id).update({
-            commission: _.inc(commission2),
-            updateTime: db.serverDate(),
-          });
-          commissionRecord.level2Id = level2Id;
-          commissionRecord.level2Amount = commission2;
-
-          if (level2User.data.inviterId) {
-            const level3Id = level2User.data.inviterId;
-            log.debug('calculateCommission', '查询三级邀请人', { userId, level3Id });
-            const level3User = await usersCollection.doc(level3Id).get();
-
-            if (level3User.data && level3User.data.userType === 'A') {
-              const commission3 = Math.round(amount * 0.02 * 0.01 * 100) / 100;
-              log.info('calculateCommission', '三级分佣', { userId, level3Id, commission: commission3, rate: '2%' });
-
-              await usersCollection.doc(level3Id).update({
-                commission: _.inc(commission3),
-                updateTime: db.serverDate(),
-              });
-              commissionRecord.level3Id = level3Id;
-              commissionRecord.level3Amount = commission3;
-            } else {
-              log.debug('calculateCommission', '三级邀请人不存在或非A类', { userId, level3Id });
-            }
-          }
-        } else {
-          log.debug('calculateCommission', '二级邀请人不存在或非A类', { userId, level2Id });
-        }
+      if (!inviterUser.data) {
+        log.debug('calculateCommission', `第${depth + 1}级邀请人不存在`, { userId, inviterId: currentInviterId });
+        break;
       }
-    } else {
-      log.debug('calculateCommission', '一级邀请人不存在或非A类', { userId, level1Id });
+
+      inviterChain.push({
+        id: currentInviterId,
+        userType: inviterUser.data.userType,
+        nextInviterId: inviterUser.data.inviterId || '',
+      });
+
+      currentInviterId = inviterUser.data.inviterId || '';
+    }
+
+    const rates = [0.1, 0.05, 0.02];
+    const levelKeys = [
+      { idKey: 'level1Id', amountKey: 'level1Amount' },
+      { idKey: 'level2Id', amountKey: 'level2Amount' },
+      { idKey: 'level3Id', amountKey: 'level3Amount' },
+    ];
+
+    for (let i = 0; i < inviterChain.length; i++) {
+      const inviter = inviterChain[i];
+
+      if (inviter.userType === 'A') {
+        const commission = Math.round(amount * rates[i] * 0.01 * 100) / 100;
+        log.info('calculateCommission', `${i + 1}级分佣`, { userId, inviterId: inviter.id, commission, rate: `${rates[i] * 100}%` });
+
+        await usersCollection.doc(inviter.id).update({
+          commission: _.inc(commission),
+          updateTime: db.serverDate(),
+        });
+
+        commissionRecord[levelKeys[i].idKey] = inviter.id;
+        commissionRecord[levelKeys[i].amountKey] = commission;
+      } else {
+        log.debug('calculateCommission', `${i + 1}级邀请人非A类，跳过`, { userId, inviterId: inviter.id, userType: inviter.userType });
+      }
     }
 
     await commissionRecordsCollection.add(commissionRecord);
