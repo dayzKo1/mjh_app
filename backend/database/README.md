@@ -108,6 +108,9 @@ await db.createCollection('withdraw_records');
 
 // 创建 ad_records 表
 await db.createCollection('ad_records');
+
+// 创建 commission_records 表（分佣记录）
+await db.createCollection('commission_records');
 ```
 
 ---
