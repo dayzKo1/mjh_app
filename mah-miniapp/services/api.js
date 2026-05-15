@@ -1,28 +1,42 @@
 /**
  * 云函数调用服务
+ * 使用 tt.cloud API 调用抖音云开发云函数
  */
-
-const cloud = require('tt-cloud');
 
 /**
  * 调用云函数
+ * 统一错误处理，检查返回code
  * @param {string} name - 云函数名称
  * @param {string} action - 操作名称
  * @param {Object} data - 参数
+ * @returns {Promise<Object>} 云函数返回结果
  */
 function callCloudFunction(name, action, data = {}) {
   return new Promise((resolve, reject) => {
-    cloud.callFunction({
+    if (!tt.cloud) {
+      reject(new Error('云开发不可用'));
+      return;
+    }
+
+    tt.cloud.callFunction({
       name,
       data: {
         action,
         ...data,
       },
       success: (res) => {
-        resolve(res.result);
+        const result = res.result || {};
+        if (result.code === 0) {
+          resolve(result);
+        } else {
+          const err = new Error(result.message || '操作失败');
+          err.code = result.code;
+          reject(err);
+        }
       },
       fail: (err) => {
-        reject(err);
+        console.error(`云函数 ${name}/${action} 调用失败:`, err);
+        reject(new Error(err.errMsg || '网络请求失败'));
       },
     });
   });
@@ -34,8 +48,9 @@ function callCloudFunction(name, action, data = {}) {
 const userApi = {
   /**
    * 用户登录
+   * @param {Object} userInfo - 用户信息，包含 openId
    */
-  login: () => callCloudFunction('user', 'login'),
+  login: (userInfo) => callCloudFunction('user', 'login', { userInfo }),
 
   /**
    * 获取用户信息

@@ -1,8 +1,10 @@
 /**
  * 游戏页面 - 羊了个羊玩法
+ * 接入云开发API：登录、保存记录、广告上报
  */
 
 const { showRewardedAd, showBannerAd, hideBannerAd, showInterstitialAd } = require('../../utils/ad');
+const { gameApi, adApi, userApi } = require('../../services/api');
 
 /** 麻将牌类型（与images目录下的文件名对应） */
 const MAHJONG_TILES = [
@@ -52,9 +54,9 @@ function generateId() {
  * 保证可解：每种牌3张（3的倍数），总共一定能消除完
  */
 function generateScene(level) {
-  const iconCount = Math.min(4 + Math.floor(level / 2), MAHJONG_TILES.length);
+  const iconCount = Math.min(8 + Math.floor(level / 2), MAHJONG_TILES.length);
   const selectedIcons = MAHJONG_TILES.slice(0, iconCount);
-  const layers = Math.min(2 + Math.floor(level / 3), 5);
+  const layers = level <= 2 ? 3 : level <= 5 ? 4 : 5;
 
   // 每种牌3张，保证可解
   const allCards = [];
@@ -213,8 +215,12 @@ Page({
     flyingCardId: null,
   },
 
-  onLoad() {
+  onLoad(options) {
     this.initGame();
+    if (options && options.inviterId) {
+      this._pendingInviterId = options.inviterId;
+      this.tryBindInviter();
+    }
   },
 
   onShow() {
@@ -297,12 +303,10 @@ Page({
         flyingCardId: null,
       });
 
-      // 第二步：暂存槽弹入动画
-      this.playSlotBounceAnimation(emptyIndex, () => {
-        setTimeout(() => {
-          this.checkAndClearSlots();
-        }, 150);
-      });
+      // 第二步：直接检查消除（无弹入动画）
+      setTimeout(() => {
+        this.checkAndClearSlots();
+      }, 200);
     });
   },
 
@@ -323,23 +327,6 @@ Page({
     this.setData({ cardAnimations });
 
     setTimeout(() => { callback(); }, 350);
-  },
-
-  /** 暂存槽弹入动画：弹性缩放 */
-  playSlotBounceAnimation(slotIndex, callback) {
-    const animation = tt.createAnimation({
-      duration: 160,
-      timingFunction: 'cubic-bezier(0.68, -0.55, 0.27, 1.55)',
-    });
-    animation.scale(1.3, 1.3).step();
-    animation.scale(1.0, 1.0).step({ duration: 120 });
-
-    const slotAnimations = this.data.slotAnimations;
-    slotAnimations[slotIndex] = animation.export();
-
-    this.setData({ slotAnimations });
-
-    setTimeout(() => { callback(); }, 300);
   },
 
   /** 检查并消除暂存槽中的三连卡片 */
@@ -456,6 +443,8 @@ Page({
     clearInterval(this.data.timer);
     this.setData({ canNextLevel: true });
 
+    this.saveGameRecord();
+
     tt.showModal({
       title: '恭喜过关!',
       content: '得分: ' + this.data.score + ', 用时: ' + this.data.time + '秒',
@@ -471,6 +460,8 @@ Page({
   gameOver() {
     clearInterval(this.data.timer);
 
+    this.saveGameRecord();
+
     tt.showModal({
       title: '游戏结束',
       content: '暂存槽已满，得分: ' + this.data.score,
@@ -478,7 +469,6 @@ Page({
       confirmText: '再试一次',
       success: (res) => {
         if (res.confirm) {
-          // 重新开始当前关
           this.setData({ time: 0 });
           this.initGame();
         } else {
@@ -486,6 +476,45 @@ Page({
         }
       }
     });
+  },
+
+  /**
+   * 保存游戏记录到云端
+   */
+  async saveGameRecord() {
+    const app = getApp();
+    const userId = app.globalData.userId;
+    if (!userId) {
+      console.warn('用户未登录，跳过保存记录');
+      return;
+    }
+
+    try {
+      await gameApi.saveRecord(userId, this.data.level, this.data.score, this.data.time);
+      console.log('游戏记录已保存到云端');
+    } catch (error) {
+      console.warn('保存游戏记录失败:', error.message);
+    }
+  },
+
+  /**
+   * 观看激励视频广告
+   */
+  async watchRewardedAd() {
+    const app = getApp();
+    const userId = app.globalData.userId;
+
+    const rewarded = await showRewardedAd(userId);
+    if (rewarded && userId) {
+      try {
+        const result = await adApi.report(userId, 'rewarded');
+        if (result.data && result.data.reward > 0) {
+          tt.showToast({ title: `获得${result.data.reward}元奖励`, icon: 'none' });
+        }
+      } catch (error) {
+        console.warn('广告上报失败:', error.message);
+      }
+    }
   },
 
   /** 撤销操作 */
@@ -550,5 +579,51 @@ Page({
   nextLevel() {
     this.setData({ level: this.data.level + 1, time: 0 });
     this.initGame();
+  },
+
+  /** 跳转到个人中心 */
+  goToProfile() {
+    tt.navigateTo({ url: '/pages/profile/profile' });
+  },
+
+  /** 跳转到排行榜 */
+  goToRank() {
+    tt.navigateTo({ url: '/pages/rank/rank' });
+  },
+
+  /** 跳转到提现页面 */
+  goToWithdraw() {
+    tt.navigateTo({ url: '/pages/withdraw/withdraw' });
+  },
+
+  /** 跳转到邀请页面 */
+  goToInvite() {
+    tt.navigateTo({ url: '/pages/invite/invite' });
+  },
+
+  /**
+   * 尝试绑定邀请人
+   * 用户通过邀请链接进入时，等待登录完成后自动绑定
+   */
+  async tryBindInviter() {
+    const inviterId = this._pendingInviterId;
+    if (!inviterId) return;
+
+    const app = getApp();
+    const userId = app.globalData.userId;
+    if (!userId) {
+      setTimeout(() => this.tryBindInviter(), 500);
+      return;
+    }
+
+    try {
+      await userApi.bindInviter(userId, inviterId);
+      console.log('邀请人绑定成功');
+      tt.showToast({ title: '邀请码已绑定', icon: 'success' });
+    } catch (error) {
+      console.warn('绑定邀请人失败:', error.message);
+    }
+
+    this._pendingInviterId = null;
   }
 });

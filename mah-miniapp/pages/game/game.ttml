@@ -50,4 +50,32 @@
     <view class="btn" bindtap="shuffle">洗牌</view>
     <view class="btn" bindtap="restartGame">重玩</view>
   </view>
+
+  <!-- 导航入口 -->
+  <view class="nav-bar">
+    <view class="nav-item" bindtap="goToProfile">
+      <view class="nav-icon nav-icon-profile">
+        <text class="nav-icon-emoji">👤</text>
+      </view>
+      <text class="nav-text">我的</text>
+    </view>
+    <view class="nav-item" bindtap="goToRank">
+      <view class="nav-icon nav-icon-rank">
+        <text class="nav-icon-emoji">🏆</text>
+      </view>
+      <text class="nav-text">排行</text>
+    </view>
+    <view class="nav-item" bindtap="goToWithdraw">
+      <view class="nav-icon nav-icon-withdraw">
+        <text class="nav-icon-emoji">💰</text>
+      </view>
+      <text class="nav-text">提现</text>
+    </view>
+    <view class="nav-item" bindtap="goToInvite">
+      <view class="nav-icon nav-icon-invite">
+        <text class="nav-icon-emoji">🎁</text>
+      </view>
+      <text class="nav-text">邀请</text>
+    </view>
+  </view>
 </view>

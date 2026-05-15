@@ -1,0 +1,137 @@
+<!-- 邀请好友页面 -->
+<view class="container">
+
+  <!-- 顶部邀请卡片 -->
+  <view class="invite-card">
+    <view class="card-title">邀请好友赚佣金</view>
+    <view class="card-desc">每邀请一位好友，即可获得佣金奖励</view>
+    <view class="invite-stats">
+      <view class="stat-item">
+        <text class="stat-num">{{totalInvite}}</text>
+        <text class="stat-label">邀请总人数</text>
+      </view>
+      <view class="stat-item">
+        <text class="stat-num">{{inviteList.level1.length}}</text>
+        <text class="stat-label">一级好友</text>
+      </view>
+      <view class="stat-item">
+        <text class="stat-num">{{inviteList.level2.length}}</text>
+        <text class="stat-label">二级好友</text>
+      </view>
+      <view class="stat-item">
+        <text class="stat-num">{{inviteList.level3.length}}</text>
+        <text class="stat-label">三级好友</text>
+      </view>
+    </view>
+    <button class="share-btn" open-type="share">邀请好友</button>
+  </view>
+
+  <!-- 邀请码区域 -->
+  <view class="invite-code">
+    <view class="code-label">我的邀请码</view>
+    <view class="code-value">{{userId}}</view>
+    <view class="copy-btn" bindtap="onCopyInviteCode">复制</view>
+  </view>
+
+  <!-- 分佣规则说明 -->
+  <view class="rules-card">
+    <view class="rules-title">分佣规则</view>
+    <view class="rules-item">
+      <text class="rules-icon">🥇</text>
+      <text class="rules-text">一级好友佣金：10%</text>
+    </view>
+    <view class="rules-item">
+      <text class="rules-icon">🥈</text>
+      <text class="rules-text">二级好友佣金：5%</text>
+    </view>
+    <view class="rules-item">
+      <text class="rules-icon">🥉</text>
+      <text class="rules-text">三级好友佣金：2%</text>
+    </view>
+    <view class="rules-tip">绑定邀请人后，B类用户自动升级为A类</view>
+  </view>
+
+  <!-- 绑定邀请人入口 -->
+  <view class="bind-entry" tt:if="{{!inviterId}}" bindtap="onShowBindModal">
+    <text class="bind-text">输入邀请码绑定邀请人</text>
+    <text class="bind-arrow">›</text>
+  </view>
+
+  <!-- 邀请列表 -->
+  <view class="invite-list">
+
+    <!-- 一级好友 -->
+    <view class="level-section">
+      <view class="level-header" bindtap="onToggleLevel" data-level="1">
+        <text class="level-title">一级好友（{{inviteList.level1.length}}人）</text>
+        <text class="level-arrow {{level1Expanded ? 'expanded' : ''}}">›</text>
+      </view>
+      <view class="level-body" tt:if="{{level1Expanded}}">
+        <view class="friend-item" tt:for="{{inviteList.level1}}" tt:key="_id">
+          <image class="friend-avatar" src="{{item.avatarUrl || '/images/default-avatar.png'}}" mode="aspectFill" />
+          <view class="friend-info">
+            <text class="friend-name">{{item.nickName || '用户' + item._id}}</text>
+            <text class="friend-commission">佣金贡献：{{item.commission || 0}}元</text>
+          </view>
+        </view>
+        <view class="empty-tip" tt:if="{{inviteList.level1.length === 0}}">暂无一级好友</view>
+      </view>
+    </view>
+
+    <!-- 二级好友 -->
+    <view class="level-section">
+      <view class="level-header" bindtap="onToggleLevel" data-level="2">
+        <text class="level-title">二级好友（{{inviteList.level2.length}}人）</text>
+        <text class="level-arrow {{level2Expanded ? 'expanded' : ''}}">›</text>
+      </view>
+      <view class="level-body" tt:if="{{level2Expanded}}">
+        <view class="friend-item" tt:for="{{inviteList.level2}}" tt:key="_id">
+          <image class="friend-avatar" src="{{item.avatarUrl || '/images/default-avatar.png'}}" mode="aspectFill" />
+          <view class="friend-info">
+            <text class="friend-name">{{item.nickName || '用户' + item._id}}</text>
+            <text class="friend-commission">佣金贡献：{{item.commission || 0}}元</text>
+          </view>
+        </view>
+        <view class="empty-tip" tt:if="{{inviteList.level2.length === 0}}">暂无二级好友</view>
+      </view>
+    </view>
+
+    <!-- 三级好友 -->
+    <view class="level-section">
+      <view class="level-header" bindtap="onToggleLevel" data-level="3">
+        <text class="level-title">三级好友（{{inviteList.level3.length}}人）</text>
+        <text class="level-arrow {{level3Expanded ? 'expanded' : ''}}">›</text>
+      </view>
+      <view class="level-body" tt:if="{{level3Expanded}}">
+        <view class="friend-item" tt:for="{{inviteList.level3}}" tt:key="_id">
+          <image class="friend-avatar" src="{{item.avatarUrl || '/images/default-avatar.png'}}" mode="aspectFill" />
+          <view class="friend-info">
+            <text class="friend-name">{{item.nickName || '用户' + item._id}}</text>
+            <text class="friend-commission">佣金贡献：{{item.commission || 0}}元</text>
+          </view>
+        </view>
+        <view class="empty-tip" tt:if="{{inviteList.level3.length === 0}}">暂无三级好友</view>
+      </view>
+    </view>
+
+  </view>
+
+  <!-- 绑定邀请人弹窗 -->
+  <view class="modal" tt:if="{{showBindModal}}" bindtap="onHideBindModal">
+    <view class="modal-content" catchtap="">
+      <view class="modal-title">绑定邀请人</view>
+      <view class="modal-desc">输入邀请人的邀请码，绑定后可享受分佣权益</view>
+      <input
+        class="modal-input"
+        placeholder="请输入邀请码"
+        value="{{inviterIdInput}}"
+        bindinput="onInviterIdInput"
+      />
+      <view class="modal-btns">
+        <view class="modal-btn cancel" bindtap="onHideBindModal">取消</view>
+        <view class="modal-btn confirm" bindtap="onBindInviter">确认绑定</view>
+      </view>
+    </view>
+  </view>
+
+</view>

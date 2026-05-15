@@ -41,6 +41,7 @@ interface WithdrawRecord {
 const WithdrawManage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [records, setRecords] = useState<WithdrawRecord[]>([]);
+  const [pagination, setPagination] = useState({ current: 1, pageSize: 20 });
   const [stats, setStats] = useState({
     pending: 0,
     approved: 0,
@@ -56,16 +57,29 @@ const WithdrawManage: React.FC = () => {
   /** 获取提现记录 */
   const fetchRecords = async () => {
     setLoading(true);
+    setPagination({ current: 1, pageSize: 20 });
     try {
-      const result = await withdrawApi.getStatistics(
-        activeTab === 'all' ? undefined : activeTab
-      );
-      if (result.code === 0) {
-        setRecords(result.data.records);
-        setStats(result.data.statistics);
+      if (activeTab === 'pending') {
+        const pendingResult = await withdrawApi.getPendingList();
+        if (pendingResult.code === 0) {
+          setRecords(pendingResult.data || []);
+        }
+        const statsResult = await withdrawApi.getStatistics();
+        if (statsResult.code === 0) {
+          setStats(statsResult.data.statistics);
+        }
+      } else {
+        const result = await withdrawApi.getStatistics(
+          activeTab === 'all' ? undefined : activeTab
+        );
+        if (result.code === 0) {
+          setRecords(result.data.records);
+          setStats(result.data.statistics);
+        }
       }
     } catch (error) {
       console.error('获取提现记录失败:', error);
+      message.error('获取提现记录失败');
     } finally {
       setLoading(false);
     }
@@ -240,9 +254,17 @@ const WithdrawManage: React.FC = () => {
 
       <Table
         columns={columns}
-        dataSource={records}
+        dataSource={records.slice((pagination.current - 1) * pagination.pageSize, pagination.current * pagination.pageSize)}
         rowKey="_id"
         loading={loading}
+        pagination={{
+          current: pagination.current,
+          pageSize: pagination.pageSize,
+          total: records.length,
+          showSizeChanger: true,
+          showTotal: (t) => `共 ${t} 条`,
+          onChange: (page, pageSize) => setPagination({ current: page, pageSize }),
+        }}
       />
     </Card>
   );

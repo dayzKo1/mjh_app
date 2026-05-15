@@ -9,7 +9,7 @@
 import axios from 'axios';
 import { message } from 'antd';
 
-const CLOUD_ENV_ID = process.env.REACT_APP_CLOUD_ENV_ID || 'your-env-id';
+const CLOUD_ENV_ID = import.meta.env.VITE_CLOUD_ENV_ID || 'your-env-id';
 const API_BASE = `https://${CLOUD_ENV_ID}.api.toutiao.com/api/function`;
 
 interface ApiResult {
@@ -79,7 +79,7 @@ function callFunction(functionName: string, action: string, data: Record<string,
  */
 export const authApi = {
   /** 验证管理员Token */
-  verify: () => callFunction('admin', 'getStatistics', { startDate: '2024-01-01', endDate: '2024-12-31' }),
+  verify: () => callFunction('admin', 'verifyToken'),
 };
 
 /**
@@ -131,4 +131,32 @@ export const adApi = {
 
   /** 获取广告配置 */
   getConfig: () => callFunction('ad', 'getConfig'),
+};
+
+/**
+ * 游戏管理API
+ */
+export const gameApi = {
+  /** 获取排行榜 */
+  getRank: (type: string = 'score', limit: number = 100) =>
+    callFunction('game', 'getRank', { type, limit }),
+};
+
+/**
+ * 管理后台API
+ */
+export const adminApi = {
+  /** 获取用户详情 */
+  getUserDetail: (userId: string) =>
+    callFunction('admin', 'getUserDetail', { userId }),
+};
+
+/**
+ * 系统配置API
+ */
+export const configApi = {
+  /** 获取游戏配置 */
+  getGameConfig: () => callFunction('game', 'getLevelConfig', { level: 1 }),
+  /** 获取广告配置 */
+  getAdConfig: () => callFunction('ad', 'getConfig'),
 };

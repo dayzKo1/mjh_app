@@ -28,6 +28,7 @@ pnpm-debug.log*
 .env
 .env.local
 .env.*.local
+.env.production
 !.env.example
 
 # Cache

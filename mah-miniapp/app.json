@@ -1,12 +1,16 @@
 {
   "pages": [
-    "pages/game/game"
+    "pages/game/game",
+    "pages/profile/profile",
+    "pages/rank/rank",
+    "pages/withdraw/withdraw",
+    "pages/invite/invite"
   ],
   "window": {
-    "navigationBarTitleText": "中国龙2 - 麻将消消乐",
-    "navigationBarBackgroundColor": "#8dac85",
+    "navigationBarTitleText": "麻将消消乐",
+    "navigationBarBackgroundColor": "#2d5a27",
     "navigationBarTextStyle": "white",
-    "backgroundColor": "#8dac85",
+    "backgroundColor": "#2d5a27",
     "backgroundTextStyle": "light"
   },
   "networkTimeout": {

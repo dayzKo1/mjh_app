@@ -23,6 +23,39 @@ const withdrawRecordsCollection = db.collection('withdraw_records');
 const adRecordsCollection = db.collection('ad_records');
 
 /**
+ * 验证管理员Token
+ * 重新验证token有效性，确保登录状态合法
+ */
+async function verifyToken(event) {
+  try {
+    const token = event.adminToken || event.headers?.adminToken || event.headers?.['x-admin-token'] || '';
+    log.debug('verifyToken', 'Token验证请求', { hasToken: !!token });
+
+    if (!token || !verifyAdminToken(event)) {
+      log.warn('verifyToken', 'Token无效', { hasToken: !!token });
+      return {
+        code: -1,
+        message: 'Token无效',
+        data: { valid: false },
+      };
+    }
+
+    return {
+      code: 0,
+      message: '验证成功',
+      data: { valid: true },
+    };
+  } catch (error) {
+    log.fail('verifyToken', 'Token验证失败', { error: error.message });
+    return {
+      code: -1,
+      message: '验证失败',
+      data: { valid: false },
+    };
+  }
+}
+
+/**
  * 获取用户列表
  */
 async function getUserList(event) {
@@ -70,6 +103,87 @@ async function getUserList(event) {
     };
   } catch (error) {
     log.fail('getUserList', '获取用户列表失败', { page, pageSize, userType, keyword, error: error.message });
+    return {
+      code: -1,
+      message: '获取失败',
+      error: error.message,
+    };
+  }
+}
+
+/**
+ * 获取用户详情
+ * 包含邀请列表、游戏记录、提现记录
+ */
+async function getUserDetail(event) {
+  const { userId } = event;
+
+  try {
+    log.start('getUserDetail', '获取用户详情请求', { userId });
+
+    if (!userId || typeof userId !== 'string') {
+      log.warn('getUserDetail', '用户ID无效', { userId });
+      return { code: -1, message: '用户ID无效' };
+    }
+
+    const userResult = await usersCollection.doc(userId).get();
+    if (!userResult.data) {
+      log.warn('getUserDetail', '用户不存在', { userId });
+      return { code: -1, message: '用户不存在' };
+    }
+
+    const user = userResult.data;
+
+    // 获取邀请人信息
+    let inviter = null;
+    if (user.inviterId) {
+      const inviterResult = await usersCollection.doc(user.inviterId).get();
+      if (inviterResult.data) {
+        inviter = {
+          _id: inviterResult.data._id,
+          nickName: inviterResult.data.nickName,
+          userType: inviterResult.data.userType,
+        };
+      }
+    }
+
+    // 获取一级邀请列表
+    const level1Result = await usersCollection.where({ inviterId: userId }).get();
+    const level1Users = level1Result.data || [];
+
+    // 获取游戏记录（最近20条）
+    const gameResult = await gameRecordsCollection
+      .where({ userId })
+      .orderBy('createTime', 'desc')
+      .limit(20)
+      .get();
+    const gameRecords = gameResult.data || [];
+
+    // 获取提现记录（最近20条）
+    const withdrawResult = await withdrawRecordsCollection
+      .where({ userId })
+      .orderBy('applyTime', 'desc')
+      .limit(20)
+      .get();
+    const withdrawRecords = withdrawResult.data || [];
+
+    log.success('getUserDetail', '获取用户详情成功', { userId });
+
+    return {
+      code: 0,
+      message: '获取成功',
+      data: {
+        user,
+        inviter,
+        inviteList: {
+          level1: level1Users,
+        },
+        gameRecords,
+        withdrawRecords,
+      },
+    };
+  } catch (error) {
+    log.fail('getUserDetail', '获取用户详情失败', { userId, error: error.message });
     return {
       code: -1,
       message: '获取失败',
@@ -212,15 +326,19 @@ async function updateUserType(event) {
 
       for (const record of pendingRecords) {
         totalPendingAmount += record.amount;
-        log.info('updateUserType', '拒绝提现申请', { userId, recordId: record._id, amount: record.amount });
+        log.info('updateUserType', '拒绝提现申请并退还佣金', { userId, recordId: record._id, amount: record.amount });
         await withdrawRecordsCollection.doc(record._id).update({
           status: 'rejected',
           processTime: db.serverDate(),
           reason: '用户被降级为B类，提现申请自动拒绝',
         });
+        await usersCollection.doc(userId).update({
+          commission: _.inc(record.amount),
+          updateTime: db.serverDate(),
+        });
       }
 
-      log.info('updateUserType', '清零用户佣金', { userId, previousCommission: currentUser.commission });
+      log.info('updateUserType', '清零用户佣金', { userId, previousCommission: currentUser.commission, refundedPending: totalPendingAmount });
       await usersCollection.doc(userId).update({
         userType: 'B',
         commission: 0,
@@ -281,6 +399,23 @@ async function getWithdrawStatistics(event) {
 
     const data = records.data || [];
 
+    const userIds = [...new Set(data.map(r => r.userId))];
+    const usersResult = await usersCollection
+      .where({
+        _id: _.in(userIds),
+      })
+      .get();
+
+    const usersMap = {};
+    (usersResult.data || []).forEach(u => {
+      usersMap[u._id] = u;
+    });
+
+    const recordsWithUser = data.map(r => ({
+      ...r,
+      user: usersMap[r.userId] || {},
+    }));
+
     const statistics = {
       pending: 0,
       approved: 0,
@@ -300,7 +435,7 @@ async function getWithdrawStatistics(event) {
       code: 0,
       message: '获取成功',
       data: {
-        records: data,
+        records: recordsWithUser,
         statistics,
       },
     };
@@ -319,20 +454,35 @@ async function getWithdrawStatistics(event) {
  * HTTP触发器通过 action 字段路由到对应方法
  */
 exports.main = async (event) => {
-  log.debug('main', '收到请求', { action: event.action });
+  let params = event;
 
-  if (!verifyAdminToken(event)) {
-    log.warn('main', '管理员权限验证失败', { action: event.action });
+  if (event.headers && event.body) {
+    try {
+      const body = typeof event.body === 'string' ? JSON.parse(event.body) : event.body;
+      params = { ...body, headers: event.headers };
+      log.debug('main', 'HTTP触发器调用', { action: params.action });
+    } catch (e) {
+      log.error('main', '请求参数解析失败', { error: e.message });
+      return { code: -1, message: '请求参数解析失败' };
+    }
+  }
+
+  log.debug('main', '收到请求', { action: params.action });
+
+  if (!verifyAdminToken(params)) {
+    log.warn('main', '管理员权限验证失败', { action: params.action });
     return {
       code: -403,
       message: '无权限访问',
     };
   }
 
-  const { action } = event;
+  const { action } = params;
 
   const actions = {
+    verifyToken,
     getUserList,
+    getUserDetail,
     getStatistics,
     updateUserType,
     getWithdrawStatistics,
@@ -346,10 +496,12 @@ exports.main = async (event) => {
     };
   }
 
-  return await actions[action](event);
+  return await actions[action](params);
 };
 
+exports.verifyToken = verifyToken;
 exports.getUserList = getUserList;
+exports.getUserDetail = getUserDetail;
 exports.getStatistics = getStatistics;
 exports.updateUserType = updateUserType;
 exports.getWithdrawStatistics = getWithdrawStatistics;

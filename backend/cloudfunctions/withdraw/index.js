@@ -18,7 +18,7 @@ const _ = db.command;
 const withdrawRecordsCollection = db.collection('withdraw_records');
 const usersCollection = db.collection('users');
 
-const ADMIN_ACTIONS = ['process'];
+const ADMIN_ACTIONS = ['process', 'getPendingList'];
 
 const WITHDRAW_CONFIG = {
   minAmount: 1,
@@ -341,7 +341,20 @@ const actions = { apply, getRecords, process, getPendingList };
  * @returns {Object} 操作结果
  */
 exports.main = async (event) => {
-  const { action } = event;
+  let params = event;
+
+  if (event.headers && event.body) {
+    try {
+      const body = typeof event.body === 'string' ? JSON.parse(event.body) : event.body;
+      params = { ...body, headers: event.headers };
+      log.debug('main', 'HTTP触发器调用', { action: params.action });
+    } catch (e) {
+      log.error('main', '请求参数解析失败', { error: e.message });
+      return { code: -1, message: '请求参数解析失败' };
+    }
+  }
+
+  const { action } = params;
 
   log.debug('main', '收到请求', { action });
 
@@ -351,14 +364,14 @@ exports.main = async (event) => {
   }
 
   if (ADMIN_ACTIONS.includes(action)) {
-    if (!verifyAdminToken(event)) {
+    if (!verifyAdminToken(params)) {
       log.warn('main', '管理员权限验证失败', { action });
       return { code: -1, message: '管理员权限验证失败' };
     }
     log.debug('main', '管理员权限验证通过', { action });
   }
 
-  return await actions[action](event);
+  return await actions[action](params);
 };
 
 exports.apply = apply;

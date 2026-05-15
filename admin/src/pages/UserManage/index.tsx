@@ -13,10 +13,13 @@ import {
   Modal,
   message,
   Avatar,
+  Drawer,
+  Descriptions,
+  Divider,
 } from 'antd';
 import { UserOutlined, SearchOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
-import { userApi } from '../../services/api';
+import { userApi, adminApi } from '../../services/api';
 
 interface UserRecord {
   _id: string;
@@ -44,6 +47,9 @@ const UserManage: React.FC = () => {
   const [userType, setUserType] = useState<string | undefined>(undefined);
   const [keyword, setKeyword] = useState('');
   const [searchKeyword, setSearchKeyword] = useState('');
+  const [detailVisible, setDetailVisible] = useState(false);
+  const [detailData, setDetailData] = useState<any>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
 
   /** 获取用户列表 */
   const fetchUsers = useCallback(async (searchKey?: string) => {
@@ -99,6 +105,24 @@ const UserManage: React.FC = () => {
   const handleSearch = () => {
     setPage(1);
     setSearchKeyword(keyword);
+  };
+
+  /** 查看用户详情 */
+  const handleViewDetail = async (record: UserRecord) => {
+    setDetailVisible(true);
+    setDetailLoading(true);
+    try {
+      const result = await adminApi.getUserDetail(record._id);
+      if (result.code === 0) {
+        setDetailData(result.data);
+      } else {
+        message.error(result.message);
+      }
+    } catch (error) {
+      message.error('获取用户详情失败');
+    } finally {
+      setDetailLoading(false);
+    }
   };
 
   const columns: ColumnsType<UserRecord> = [
@@ -167,16 +191,21 @@ const UserManage: React.FC = () => {
     {
       title: '操作',
       key: 'action',
-      width: 120,
+      width: 180,
       render: (_, record) => (
-        <Button
-          size="small"
-          type={record.userType === 'A' ? 'default' : 'primary'}
-          danger={record.userType === 'A'}
-          onClick={() => handleToggleType(record)}
-        >
-          切换为{record.userType === 'A' ? 'B' : 'A'}类
-        </Button>
+        <Space>
+          <Button size="small" onClick={() => handleViewDetail(record)}>
+            详情
+          </Button>
+          <Button
+            size="small"
+            type={record.userType === 'A' ? 'default' : 'primary'}
+            danger={record.userType === 'A'}
+            onClick={() => handleToggleType(record)}
+          >
+            切换为{record.userType === 'A' ? 'B' : 'A'}类
+          </Button>
+        </Space>
       ),
     },
   ];
@@ -224,6 +253,98 @@ const UserManage: React.FC = () => {
           },
         }}
       />
+      <Drawer
+        title="用户详情"
+        placement="right"
+        width={560}
+        open={detailVisible}
+        onClose={() => setDetailVisible(false)}
+        loading={detailLoading}
+      >
+        {detailData && (
+          <>
+            <Descriptions title="基本信息" bordered size="small" column={2}>
+              <Descriptions.Item label="头像">
+                <Avatar src={detailData.user.avatarUrl} icon={<UserOutlined />} />
+              </Descriptions.Item>
+              <Descriptions.Item label="昵称">{detailData.user.nickName || '-'}</Descriptions.Item>
+              <Descriptions.Item label="类型">
+                <Tag color={detailData.user.userType === 'A' ? 'green' : 'default'}>
+                  {detailData.user.userType}类用户
+                </Tag>
+              </Descriptions.Item>
+              <Descriptions.Item label="关卡">{detailData.user.level}</Descriptions.Item>
+              <Descriptions.Item label="得分">{detailData.user.score}</Descriptions.Item>
+              <Descriptions.Item label="佣金余额">¥{(detailData.user.commission || 0).toFixed(2)}</Descriptions.Item>
+              <Descriptions.Item label="累计提现">¥{(detailData.user.totalWithdraw || 0).toFixed(2)}</Descriptions.Item>
+              <Descriptions.Item label="注册时间">
+                {detailData.user.createTime ? new Date(detailData.user.createTime).toLocaleString() : '-'}
+              </Descriptions.Item>
+            </Descriptions>
+
+            {detailData.inviter && (
+              <>
+                <Divider />
+                <Descriptions title="邀请人" bordered size="small" column={2}>
+                  <Descriptions.Item label="昵称">{detailData.inviter.nickName || '-'}</Descriptions.Item>
+                  <Descriptions.Item label="类型">
+                    <Tag color={detailData.inviter.userType === 'A' ? 'green' : 'default'}>
+                      {detailData.inviter.userType}类
+                    </Tag>
+                  </Descriptions.Item>
+                </Descriptions>
+              </>
+            )}
+
+            <Divider />
+            <div style={{ marginBottom: 8, fontWeight: 'bold' }}>一级邀请 ({detailData.inviteList?.level1?.length || 0}人)</div>
+            <Table
+              size="small"
+              pagination={false}
+              dataSource={detailData.inviteList?.level1 || []}
+              rowKey="_id"
+              columns={[
+                { title: '昵称', dataIndex: 'nickName', render: (name: string, r: any) => name || r._id?.slice(0, 8) },
+                { title: '类型', dataIndex: 'userType', width: 80, render: (t: string) => <Tag color={t === 'A' ? 'green' : 'default'}>{t}类</Tag> },
+                { title: '佣金', dataIndex: 'commission', width: 90, render: (v: number) => `¥${(v || 0).toFixed(2)}` },
+              ]}
+            />
+
+            <Divider />
+            <div style={{ marginBottom: 8, fontWeight: 'bold' }}>最近游戏记录</div>
+            <Table
+              size="small"
+              pagination={false}
+              dataSource={detailData.gameRecords || []}
+              rowKey="_id"
+              columns={[
+                { title: '关卡', dataIndex: 'level', width: 60 },
+                { title: '得分', dataIndex: 'score', width: 70 },
+                { title: '用时', dataIndex: 'time', width: 70, render: (v: number) => `${v}s` },
+                { title: '时间', dataIndex: 'createTime', render: (t: string) => t ? new Date(t).toLocaleString() : '-' },
+              ]}
+            />
+
+            <Divider />
+            <div style={{ marginBottom: 8, fontWeight: 'bold' }}>最近提现记录</div>
+            <Table
+              size="small"
+              pagination={false}
+              dataSource={detailData.withdrawRecords || []}
+              rowKey="_id"
+              columns={[
+                { title: '金额', dataIndex: 'amount', width: 80, render: (v: number) => `¥${v.toFixed(2)}` },
+                { title: '状态', dataIndex: 'status', width: 80, render: (s: string) => {
+                  const map: Record<string, { text: string; color: string }> = { pending: { text: '待审核', color: 'orange' }, approved: { text: '已通过', color: 'green' }, rejected: { text: '已拒绝', color: 'red' } };
+                  const item = map[s] || { text: s, color: 'default' };
+                  return <Tag color={item.color}>{item.text}</Tag>;
+                }},
+                { title: '申请时间', dataIndex: 'applyTime', render: (t: string) => t ? new Date(t).toLocaleString() : '-' },
+              ]}
+            />
+          </>
+        )}
+      </Drawer>
     </Card>
   );
 };

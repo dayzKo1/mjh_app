@@ -1,10 +1,10 @@
 /**
  * 小程序入口
- * 
- * 模拟器中云开发和广告API可能不可用，做了安全检查
+ * 初始化云开发、用户登录、广告模块
  */
 
 const { initAds } = require('./utils/ad');
+const { userApi } = require('./services/api');
 
 App({
   globalData: {
@@ -19,7 +19,6 @@ App({
   async onLaunch() {
     console.log('小程序启动', tt.getLaunchOptionsSync());
 
-    // 初始化云开发（如果可用）
     try {
       if (tt.cloud) {
         tt.cloud.init({
@@ -34,14 +33,50 @@ App({
       console.warn('云开发初始化失败:', e.message);
     }
 
-    // 初始化广告（模拟器中可能不可用）
     await initAds();
 
-    // 模拟器中暂不登录，游戏可正常玩
+    await this.login();
+
     console.log('小程序初始化完成');
   },
 
   onShow() {
     console.log('小程序显示');
+  },
+
+  /**
+   * 用户登录
+   * 获取openId后调用后端登录接口
+   */
+  async login() {
+    try {
+      if (!tt.cloud) {
+        console.warn('云开发不可用，跳过登录');
+        return;
+      }
+
+      const loginRes = await new Promise((resolve, reject) => {
+        tt.login({
+          success: resolve,
+          fail: reject,
+        });
+      });
+
+      const openId = loginRes?.anonymousCode || loginRes?.code || '';
+      if (!openId) {
+        console.warn('获取openId失败，跳过登录');
+        return;
+      }
+
+      const result = await userApi.login({ openId });
+      if (result.code === 0 && result.data) {
+        this.globalData.userInfo = result.data;
+        this.globalData.userId = result.data._id;
+        this.globalData.hasLogin = true;
+        console.log('登录成功, userId:', result.data._id);
+      }
+    } catch (error) {
+      console.warn('登录失败:', error.message);
+    }
   },
 });

@@ -1,0 +1,74 @@
+<!-- 提现页面 -->
+<view class="container">
+  <!-- 顶部余额卡片 -->
+  <view class="balance-card">
+    <text class="balance-label">可提现佣金（元）</text>
+    <text class="balance-amount">{{commission}}</text>
+  </view>
+
+  <!-- B类用户提示 -->
+  <view class="type-notice" tt:if="{{userType === 'B'}}">
+    <text class="type-notice-text">当前用户类型暂不可提现，仅A类用户可申请提现</text>
+  </view>
+
+  <!-- 提现表单 -->
+  <view class="form-section">
+    <view class="form-label">提现金额</view>
+    <input
+      class="amount-input"
+      type="digit"
+      placeholder="请输入提现金额"
+      value="{{amount}}"
+      bindinput="onAmountInput"
+      disabled="{{userType === 'B'}}"
+    />
+
+    <!-- 快捷金额按钮 -->
+    <view class="quick-amounts">
+      <view class="quick-btn" bindtap="onAmountQuick" data-amount="1">1元</view>
+      <view class="quick-btn" bindtap="onAmountQuick" data-amount="5">5元</view>
+      <view class="quick-btn" bindtap="onAmountQuick" data-amount="10">10元</view>
+      <view class="quick-btn" bindtap="onAmountQuick" data-amount="50">50元</view>
+    </view>
+
+    <!-- 全部提现 -->
+    <view class="all-btn" bindtap="onAmountAll">全部提现</view>
+
+    <!-- 提现按钮 -->
+    <view
+      class="submit-btn {{userType === 'B' || submitting ? 'disabled' : ''}}"
+      bindtap="onSubmit"
+    >
+      {{submitting ? '提交中...' : '申请提现'}}
+    </view>
+  </view>
+
+  <!-- 提现说明 -->
+  <view class="rules">
+    <text class="rules-title">提现规则</text>
+    <text class="rules-item">· 仅A类用户可申请提现</text>
+    <text class="rules-item">· 最低提现金额1元</text>
+    <text class="rules-item">· 单次最高提现100元</text>
+    <text class="rules-item">· 每日最多提现3次</text>
+    <text class="rules-item">· 提现申请提交后需审核</text>
+  </view>
+
+  <!-- 提现记录 -->
+  <view class="records-section">
+    <view class="records-title">提现记录</view>
+
+    <view tt:if="{{records.length === 0}}" class="records-empty">
+      <text>暂无提现记录</text>
+    </view>
+
+    <view tt:for="{{records}}" tt:key="_id" class="record-item">
+      <view class="record-left">
+        <text class="record-amount">¥{{item.amount}}</text>
+        <text class="record-time">{{item.formatTime}}</text>
+      </view>
+      <view class="status-tag status-{{item.status}}">
+        {{item.statusText}}
+      </view>
+    </view>
+  </view>
+</view>

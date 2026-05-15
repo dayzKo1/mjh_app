@@ -229,7 +229,20 @@ exports.getStatistics = async (event) => {
  * @returns {Object} 操作结果
  */
 exports.main = async (event) => {
-  const { action } = event;
+  let params = event;
+
+  if (event.headers && event.body) {
+    try {
+      const body = typeof event.body === 'string' ? JSON.parse(event.body) : event.body;
+      params = { ...body, headers: event.headers };
+      log.debug('main', 'HTTP触发器调用', { action: params.action });
+    } catch (e) {
+      log.error('main', '请求参数解析失败', { error: e.message });
+      return { code: -1, message: '请求参数解析失败' };
+    }
+  }
+
+  const { action } = params;
   const actions = { report: exports.report, getConfig: exports.getConfig, getStatistics: exports.getStatistics };
 
   log.debug('main', '收到请求', { action });
@@ -239,10 +252,10 @@ exports.main = async (event) => {
     return { code: -1, message: `未知操作: ${action}` };
   }
 
-  if (action === 'getStatistics' && !verifyAdminToken(event)) {
+  if (action === 'getStatistics' && !verifyAdminToken(params)) {
     log.warn('main', '管理员验证失败', { action });
     return { code: -1, message: '管理员验证失败' };
   }
 
-  return await actions[action](event);
+  return await actions[action](params);
 };

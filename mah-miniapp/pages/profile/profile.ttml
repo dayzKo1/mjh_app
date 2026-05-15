@@ -1,0 +1,86 @@
+<!-- 个人中心页面 -->
+<view class="container">
+
+  <!-- 顶部用户信息卡片 -->
+  <view class="user-card">
+    <view class="avatar-wrap">
+      <image
+        tt:if="{{userInfo.avatarUrl}}"
+        class="avatar"
+        src="{{userInfo.avatarUrl}}"
+        mode="aspectFill"
+      />
+      <view tt:else class="avatar avatar-default"></view>
+    </view>
+    <view class="user-info">
+      <text class="nickname">{{userInfo.nickName || '未登录'}}</text>
+      <view class="user-type-tag {{userType === 'A' ? 'type-a' : 'type-b'}}">
+        {{userType === 'A' ? '可提现' : '不可提现'}}
+      </view>
+    </view>
+  </view>
+
+  <!-- 资产卡片 -->
+  <view class="asset-card">
+    <view class="asset-row">
+      <view class="asset-item asset-main">
+        <text class="asset-label">佣金余额</text>
+        <text class="asset-value">{{commission}}</text>
+        <text class="asset-unit">元</text>
+      </view>
+      <view class="asset-divider"></view>
+      <view class="asset-item">
+        <text class="asset-label">累计提现</text>
+        <text class="asset-value-sm">{{totalWithdraw}}</text>
+        <text class="asset-unit-sm">元</text>
+      </view>
+    </view>
+    <view tt:if="{{userType === 'A'}}" class="withdraw-btn" bindtap="onWithdraw">
+      立即提现
+    </view>
+  </view>
+
+  <!-- 游戏数据卡片 -->
+  <view class="stats-card">
+    <view class="stat-item">
+      <text class="stat-value">{{maxLevel}}</text>
+      <text class="stat-label">最高关卡</text>
+    </view>
+    <view class="stat-divider"></view>
+    <view class="stat-item">
+      <text class="stat-value">{{totalScore}}</text>
+      <text class="stat-label">累计得分</text>
+    </view>
+    <view class="stat-divider"></view>
+    <view class="stat-item">
+      <text class="stat-value">{{totalGames}}</text>
+      <text class="stat-label">游戏次数</text>
+    </view>
+  </view>
+
+  <!-- 功能入口 -->
+  <view class="feature-grid">
+    <view class="feature-item" bindtap="onRank">
+      <view class="feature-icon icon-rank"></view>
+      <text class="feature-text">排行榜</text>
+    </view>
+    <view class="feature-item" bindtap="onInvite">
+      <view class="feature-icon icon-invite"></view>
+      <text class="feature-text">邀请好友</text>
+    </view>
+    <view class="feature-item" bindtap="onGameRecords">
+      <view class="feature-icon icon-record"></view>
+      <text class="feature-text">游戏记录</text>
+    </view>
+    <view class="feature-item" bindtap="onAbout">
+      <view class="feature-icon icon-about"></view>
+      <text class="feature-text">关于</text>
+    </view>
+  </view>
+
+  <!-- 底部提示 -->
+  <view tt:if="{{userType === 'B'}}" class="tip-text">
+    邀请好友成为A类用户，即可提现佣金
+  </view>
+
+</view>

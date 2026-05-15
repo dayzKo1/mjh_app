@@ -258,15 +258,21 @@ exports.getRank = async (event) => {
         _id: true,
         nickName: true,
         avatarUrl: true,
-        [type]: true,
+        score: true,
+        commission: true,
       })
       .get();
 
-    log.success('getRank', '获取排行榜成功', { type, count: (result.data || []).length });
+    const data = (result.data || []).map(item => ({
+      ...item,
+      userId: item._id,
+    }));
+
+    log.success('getRank', '获取排行榜成功', { type, count: data.length });
     return {
       code: 0,
       message: '获取成功',
-      data: result.data || [],
+      data,
     };
   } catch (error) {
     log.fail('getRank', '获取排行榜失败', { type, error: error.message });
@@ -296,11 +302,20 @@ exports.getUserRecords = async (event) => {
       .limit(limit)
       .get();
 
-    log.success('getUserRecords', '获取用户游戏记录成功', { userId, count: (result.data || []).length });
+    const records = result.data || [];
+    const maxLevel = records.length > 0 ? Math.max(...records.map(r => r.level || 0)) : 0;
+    const totalScore = records.reduce((sum, r) => sum + (r.score || 0), 0);
+
+    log.success('getUserRecords', '获取用户游戏记录成功', { userId, count: records.length, maxLevel, totalScore });
     return {
       code: 0,
       message: '获取成功',
-      data: result.data || [],
+      data: {
+        records,
+        maxLevel,
+        totalScore,
+        totalGames: records.length,
+      },
     };
   } catch (error) {
     log.fail('getUserRecords', '获取游戏记录失败', { userId, error: error.message });

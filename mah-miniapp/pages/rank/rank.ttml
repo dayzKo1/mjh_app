@@ -1,0 +1,79 @@
+<!-- 排行榜页面 -->
+<view class="container">
+  <view class="header">排行榜</view>
+
+  <!-- Tab切换 -->
+  <view class="tabs">
+    <view
+      tt:for="{{tabs}}"
+      tt:key="index"
+      class="tab {{currentTab === index ? 'tab-active' : ''}}"
+      data-index="{{index}}"
+      bindtap="onTabChange"
+    >
+      {{item}}
+    </view>
+  </view>
+
+  <!-- 加载中 -->
+  <view tt:if="{{loading}}" class="loading">
+    <text>加载中...</text>
+  </view>
+
+  <!-- 空列表 -->
+  <view tt:elif="{{rankList.length === 0}}" class="empty">
+    <text>暂无排行数据</text>
+  </view>
+
+  <!-- 排行列表 -->
+  <view tt:else class="rank-list">
+    <view
+      tt:for="{{rankList}}"
+      tt:key="index"
+      class="rank-item {{index < 3 ? 'rank-top rank-top-' + (index + 1) : ''}}"
+    >
+      <!-- 排名 -->
+      <view class="rank-number">
+        <text tt:if="{{index < 3}}">{{index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'}}</text>
+        <text tt:else>{{index + 1}}</text>
+      </view>
+
+      <!-- 头像 -->
+      <image
+        class="rank-avatar"
+        src="{{item.avatarUrl || '/images/default_avatar.png'}}"
+        mode="aspectFit"
+      />
+
+      <!-- 昵称 -->
+      <view class="rank-name">
+        <text>{{item.nickName || '匿名用户'}}</text>
+      </view>
+
+      <!-- 分数/佣金 -->
+      <view class="rank-value">
+        <text tt:if="{{currentTab === 0}}">{{item.score || 0}}分</text>
+        <text tt:else>{{item.commission || 0}}元</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 自己的排名 -->
+  <view tt:if="{{myRank}}" class="my-rank">
+    <view class="rank-number">
+      <text>{{myRank.rank || '--'}}</text>
+    </view>
+    <image
+      class="rank-avatar"
+      src="{{myRank.avatarUrl || '/images/default_avatar.png'}}"
+      mode="aspectFit"
+    />
+    <view class="rank-name">
+      <text>{{myRank.nickName || '我'}}</text>
+    </view>
+    <view class="rank-value">
+      <text tt:if="{{currentTab === 0}}">{{myRank.score || 0}}分</text>
+      <text tt:else>{{myRank.commission || 0}}元</text>
+    </view>
+  </view>
+</view>

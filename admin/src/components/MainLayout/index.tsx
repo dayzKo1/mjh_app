@@ -8,6 +8,9 @@ import {
   UserOutlined,
   DollarOutlined,
   FundOutlined,
+  TrophyOutlined,
+  TeamOutlined,
+  SettingOutlined,
   LogoutOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
@@ -43,9 +46,24 @@ const MainLayout: React.FC = () => {
       label: '提现审核',
     },
     {
+      key: '/games',
+      icon: <TrophyOutlined />,
+      label: '游戏数据',
+    },
+    {
+      key: '/invites',
+      icon: <TeamOutlined />,
+      label: '邀请管理',
+    },
+    {
       key: '/ads',
       icon: <FundOutlined />,
       label: '广告统计',
+    },
+    {
+      key: '/config',
+      icon: <SettingOutlined />,
+      label: '系统配置',
     },
   ];
 

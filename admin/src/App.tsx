@@ -12,6 +12,9 @@ import Dashboard from './pages/Dashboard';
 import UserManage from './pages/UserManage';
 import WithdrawManage from './pages/WithdrawManage';
 import AdManage from './pages/AdManage';
+import GameManage from './pages/GameManage';
+import InviteManage from './pages/InviteManage';
+import ConfigManage from './pages/ConfigManage';
 
 /**
  * 路由守卫
@@ -46,6 +49,9 @@ const App: React.FC = () => {
             <Route path="users" element={<UserManage />} />
             <Route path="withdraw" element={<WithdrawManage />} />
             <Route path="ads" element={<AdManage />} />
+            <Route path="games" element={<GameManage />} />
+            <Route path="invites" element={<InviteManage />} />
+            <Route path="config" element={<ConfigManage />} />
           </Route>
         </Routes>
       </BrowserRouter>

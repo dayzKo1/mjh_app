@@ -12,6 +12,12 @@ const ADMIN_CREDENTIALS = {
   password: 'mah123456',
 };
 
+const ADMIN_TOKEN = import.meta.env.VITE_ADMIN_TOKEN || '';
+
+if (!ADMIN_TOKEN) {
+  console.warn('[Login] VITE_ADMIN_TOKEN 未设置，登录功能将不可用');
+}
+
 /**
  * 登录组件
  */
@@ -21,6 +27,11 @@ const Login: React.FC = () => {
 
   /** 登录 */
   const handleLogin = async (values: { username: string; password: string }) => {
+    if (!ADMIN_TOKEN) {
+      message.error('系统配置错误，请联系管理员');
+      return;
+    }
+
     setLoading(true);
     try {
       if (values.username !== ADMIN_CREDENTIALS.username || values.password !== ADMIN_CREDENTIALS.password) {
@@ -29,17 +40,17 @@ const Login: React.FC = () => {
         return;
       }
 
-      const token = `admin_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      localStorage.setItem('admin_token', token);
+      localStorage.setItem('admin_token', ADMIN_TOKEN);
 
       try {
         await authApi.verify();
+        setToken(ADMIN_TOKEN);
+        message.success('登录成功');
       } catch (verifyError) {
-        console.warn('Token验证失败，但允许登录:', verifyError);
+        localStorage.removeItem('admin_token');
+        message.error('Token验证失败，请检查服务端配置');
+        return;
       }
-
-      setToken(token);
-      message.success('登录成功');
     } catch (error) {
       message.error('登录失败');
     } finally {
