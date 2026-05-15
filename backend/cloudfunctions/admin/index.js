@@ -339,9 +339,10 @@ async function updateUserType(event) {
       }
 
       log.info('updateUserType', '清零用户佣金', { userId, previousCommission: currentUser.commission, refundedPending: totalPendingAmount });
+      const currentCommission = currentUser.commission || 0;
       await usersCollection.doc(userId).update({
         userType: 'B',
-        commission: 0,
+        commission: _.inc(-currentCommission),
         updateTime: db.serverDate(),
       });
 

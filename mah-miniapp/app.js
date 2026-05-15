@@ -46,7 +46,7 @@ App({
 
   /**
    * 用户登录
-   * 获取openId后调用后端登录接口
+   * 调用后端登录接口，由云函数自动获取openId
    */
   async login() {
     try {
@@ -55,20 +55,7 @@ App({
         return;
       }
 
-      const loginRes = await new Promise((resolve, reject) => {
-        tt.login({
-          success: resolve,
-          fail: reject,
-        });
-      });
-
-      const openId = loginRes?.anonymousCode || loginRes?.code || '';
-      if (!openId) {
-        console.warn('获取openId失败，跳过登录');
-        return;
-      }
-
-      const result = await userApi.login({ openId });
+      const result = await userApi.login({});
       if (result.code === 0 && result.data) {
         this.globalData.userInfo = result.data;
         this.globalData.userId = result.data._id;

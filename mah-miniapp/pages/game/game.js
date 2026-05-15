@@ -203,16 +203,16 @@ Page({
     time: 0,
     cards: [],
     slots: [null, null, null, null, null, null, null],
-    canNextLevel: false,
     timer: null,
     animating: false,
-    gameCount: 0,
     /** 每张卡片的动画数据，key为 card.id */
     cardAnimations: {},
     /** 暂存槽每个位置的动画数据，key为 slot index */
     slotAnimations: {},
     /** 正在飞行的卡片 ID */
     flyingCardId: null,
+    /** 游戏是否已结束 */
+    gameOverState: false,
   },
 
   onLoad(options) {
@@ -225,10 +225,18 @@ Page({
 
   onShow() {
     showBannerAd();
+    if (this.data._paused && !this.data.gameOverState) {
+      this.startTimer();
+      this.setData({ _paused: false });
+    }
   },
 
   onHide() {
     hideBannerAd();
+    if (this.data.timer) {
+      clearInterval(this.data.timer);
+      this.setData({ _paused: true });
+    }
   },
 
   onUnload() {
@@ -248,8 +256,8 @@ Page({
     this.setData({
       cards,
       slots: [null, null, null, null, null, null, null],
-      canNextLevel: false,
-      animating: false
+      animating: false,
+      gameOverState: false
     });
 
     this.startTimer();
@@ -270,7 +278,7 @@ Page({
 
   /** 点击卡片 */
   onCardTap(e) {
-    if (this.data.animating) return;
+    if (this.data.animating || this.data.gameOverState) return;
 
     const index = e.currentTarget.dataset.index;
     const cards = this.data.cards.slice();
@@ -286,6 +294,13 @@ Page({
     }
 
     this.setData({ animating: true, flyingCardId: card.id });
+
+    if (this._animatingTimer) clearTimeout(this._animatingTimer);
+    this._animatingTimer = setTimeout(() => {
+      if (this.data.animating) {
+        this.setData({ animating: false });
+      }
+    }, 3000);
 
     // 第一步：拾取动画（弹起 + 发光）
     this.playPickupAnimation(card.id, () => {
@@ -441,7 +456,6 @@ Page({
   /** 检查胜利 */
   checkWin() {
     clearInterval(this.data.timer);
-    this.setData({ canNextLevel: true });
 
     this.saveGameRecord();
 
@@ -459,6 +473,7 @@ Page({
   /** 游戏结束 */
   gameOver() {
     clearInterval(this.data.timer);
+    this.setData({ gameOverState: true });
 
     this.saveGameRecord();
 
@@ -469,7 +484,7 @@ Page({
       confirmText: '再试一次',
       success: (res) => {
         if (res.confirm) {
-          this.setData({ time: 0 });
+          this.setData({ time: 0, score: 0 });
           this.initGame();
         } else {
           this.restartGame();
@@ -519,6 +534,8 @@ Page({
 
   /** 撤销操作 */
   undo() {
+    if (this.data.gameOverState) return;
+
     const slots = this.data.slots.slice();
     const cards = this.data.cards.slice();
 
@@ -549,21 +566,33 @@ Page({
     });
   },
 
-  /** 洗牌 - 打乱剩余卡片的图标 */
+  /** 洗牌 - 打乱剩余卡片的图标，保持每种图标数量仍为3的倍数 */
   shuffle() {
+    if (this.data.animating || this.data.gameOverState) return;
+
     const cards = this.data.cards.slice();
     const activeCards = cards.filter(c => c.status === 0);
+    if (activeCards.length === 0) return;
+
     const icons = activeCards.map(c => c.icon);
-    const shuffledIcons = shuffleArray(icons);
+    for (let i = icons.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [icons[i], icons[j]] = [icons[j], icons[i]];
+    }
 
     activeCards.forEach((card, index) => {
-      card.icon = shuffledIcons[index];
+      const original = cards.find(c => c.id === card.id);
+      if (original) {
+        original.icon = icons[index];
+      }
     });
 
     this.setData({
       cards: checkCover(cards),
       score: Math.max(0, this.data.score - 1)
     });
+
+    tt.showToast({ title: '已洗牌 -1分', icon: 'none' });
   },
 
   /** 重新开始 */
@@ -611,8 +640,24 @@ Page({
 
     const app = getApp();
     const userId = app.globalData.userId;
+
+    this._bindRetryCount = (this._bindRetryCount || 0) + 1;
+    if (this._bindRetryCount > 10) {
+      console.warn('绑定邀请人超时，放弃重试');
+      this._pendingInviterId = null;
+      this._bindRetryCount = 0;
+      return;
+    }
+
     if (!userId) {
       setTimeout(() => this.tryBindInviter(), 500);
+      return;
+    }
+
+    if (inviterId === userId) {
+      console.warn('不可自我邀请');
+      this._pendingInviterId = null;
+      this._bindRetryCount = 0;
       return;
     }
 
@@ -625,5 +670,6 @@ Page({
     }
 
     this._pendingInviterId = null;
+    this._bindRetryCount = 0;
   }
 });

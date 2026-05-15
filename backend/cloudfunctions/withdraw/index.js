@@ -99,6 +99,7 @@ async function apply(event) {
       .where({
         userId,
         applyTime: _.gte(today),
+        status: _.in(['pending', 'approved']),
       })
       .count();
 
@@ -112,18 +113,6 @@ async function apply(event) {
       };
     }
 
-    const record = {
-      userId,
-      amount,
-      status: 'pending',
-      applyTime: db.serverDate(),
-      processTime: null,
-      reason: '',
-    };
-
-    const result = await withdrawRecordsCollection.add(record);
-    log.info('apply', '提现记录已创建', { userId, recordId: result.id, amount });
-
     log.debug('apply', '执行乐观锁扣减佣金', { userId, amount });
     const updateResult = await usersCollection
       .where({
@@ -136,22 +125,45 @@ async function apply(event) {
       });
 
     if (updateResult.updated === 0) {
-      log.warn('apply', '乐观锁扣减失败，删除提现记录', { userId, recordId: result.id, amount });
-      await withdrawRecordsCollection.doc(result.id).remove();
+      log.warn('apply', '乐观锁扣减失败，佣金余额不足或已被占用', { userId, amount });
       return {
         code: -1,
         message: '佣金余额不足或已被其他操作占用',
       };
     }
 
-    log.success('apply', '提现申请成功', { userId, recordId: result.id, amount });
-    return {
-      code: 0,
-      message: '申请成功，等待审核',
-      data: {
-        recordId: result.id,
-      },
+    const record = {
+      userId,
+      amount,
+      status: 'pending',
+      applyTime: db.serverDate(),
+      processTime: null,
+      reason: '',
     };
+
+    try {
+      const result = await withdrawRecordsCollection.add(record);
+      log.info('apply', '提现记录已创建', { userId, recordId: result.id, amount });
+
+      log.success('apply', '提现申请成功', { userId, recordId: result.id, amount });
+      return {
+        code: 0,
+        message: '申请成功，等待审核',
+        data: {
+          recordId: result.id,
+        },
+      };
+    } catch (addError) {
+      log.warn('apply', '创建提现记录失败，退还佣金', { userId, amount, error: addError.message });
+      await usersCollection.doc(userId).update({
+        commission: _.inc(amount),
+        updateTime: db.serverDate(),
+      });
+      return {
+        code: -1,
+        message: '申请失败，请重试',
+      };
+    }
   } catch (error) {
     log.fail('apply', '申请提现失败', { userId, amount, error: error.message, stack: error.stack });
     return {
@@ -173,7 +185,12 @@ async function getRecords(event) {
   const { userId, limit = 50 } = event;
 
   try {
-    log.start('getRecords', '获取提现记录请求', { userId, limit });
+    log.start('getRecords', '获取提现记录请求', { userId });
+
+    if (!userId || typeof userId !== 'string') {
+      log.warn('getRecords', '用户ID无效', { userId });
+      return { code: -1, message: '用户ID无效' };
+    }
 
     const result = await withdrawRecordsCollection
       .where({ userId })
@@ -233,19 +250,21 @@ async function process(event) {
     const record = recordResult.data;
     log.debug('process', '提现记录信息', { recordId, userId: record.userId, amount: record.amount, currentStatus: record.status });
 
-    if (record.status !== 'pending') {
-      log.warn('process', '提现已处理', { recordId, currentStatus: record.status });
-      return {
-        code: -1,
-        message: '该提现已处理',
-      };
-    }
+    const updateResult = await withdrawRecordsCollection
+      .where({
+        _id: recordId,
+        status: 'pending',
+      })
+      .update({
+        status,
+        processTime: db.serverDate(),
+        reason: reason || '',
+      });
 
-    await withdrawRecordsCollection.doc(recordId).update({
-      status,
-      processTime: db.serverDate(),
-      reason,
-    });
+    if (updateResult.updated === 0) {
+      log.warn('process', '记录状态已变更，无法处理', { recordId, status });
+      return { code: -1, message: '该记录已被处理，请刷新页面' };
+    }
 
     if (status === 'rejected') {
       log.info('process', '提现被拒绝，退还佣金', { recordId, userId: record.userId, amount: record.amount });

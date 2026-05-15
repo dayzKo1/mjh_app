@@ -16,25 +16,34 @@ const usersCollection = db.collection('users');
 
 /**
  * 用户登录
- * 包含参数验证和错误处理
+ * 优先使用云开发上下文获取真实openId，确保用户唯一性
  * @param {Object} event - 云函数调用参数
- * @param {Object} event.userInfo - 用户信息
+ * @param {Object} event.userInfo - 用户信息（可选，兼容旧版）
  */
 exports.login = async (event) => {
-  const { userInfo } = event;
-
   try {
-    log.start('login', '用户登录请求', { hasUserInfo: !!userInfo });
+    log.start('login', '用户登录请求');
 
-    if (!userInfo || typeof userInfo !== 'object') {
-      log.warn('login', '用户信息无效', { userInfo });
-      return { code: -1, message: '用户信息无效' };
+    let openId = '';
+
+    try {
+      const context = app.openId();
+      if (context) {
+        openId = context;
+        log.debug('login', '从云开发上下文获取openId', { openId });
+      }
+    } catch (e) {
+      log.debug('login', '云开发上下文获取openId失败，尝试从参数获取', { error: e.message });
     }
 
-    const { openId } = userInfo;
+    if (!openId && event.userInfo && event.userInfo.openId) {
+      openId = event.userInfo.openId;
+      log.debug('login', '从参数获取openId', { openId });
+    }
+
     if (!openId || typeof openId !== 'string') {
-      log.warn('login', 'openId无效', { openId });
-      return { code: -1, message: 'openId无效' };
+      log.warn('login', 'openId无效，无法登录', { openId });
+      return { code: -1, message: 'openId无效，请重新打开小程序' };
     }
 
     log.debug('login', '查询用户', { openId });

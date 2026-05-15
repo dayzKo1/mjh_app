@@ -138,7 +138,7 @@ async function calculateCommission(userId, amount, userData) {
     }
 
     const totalCommissionRate = 0.1 + 0.05 + 0.02;
-    const potentialCommission = amount * totalCommissionRate * 0.01;
+    const potentialCommission = Math.round(amount * totalCommissionRate * 0.01 * 100) / 100;
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -170,7 +170,7 @@ async function calculateCommission(userId, amount, userData) {
     const level1User = await usersCollection.doc(level1Id).get();
 
     if (level1User.data && level1User.data.userType === 'A') {
-      const commission1 = amount * 0.1 * 0.01;
+      const commission1 = Math.round(amount * 0.1 * 0.01 * 100) / 100;
       log.info('calculateCommission', '一级分佣', { userId, level1Id, commission: commission1, rate: '10%' });
 
       await usersCollection.doc(level1Id).update({
@@ -186,7 +186,7 @@ async function calculateCommission(userId, amount, userData) {
         const level2User = await usersCollection.doc(level2Id).get();
 
         if (level2User.data && level2User.data.userType === 'A') {
-          const commission2 = amount * 0.05 * 0.01;
+          const commission2 = Math.round(amount * 0.05 * 0.01 * 100) / 100;
           log.info('calculateCommission', '二级分佣', { userId, level2Id, commission: commission2, rate: '5%' });
 
           await usersCollection.doc(level2Id).update({
@@ -202,7 +202,7 @@ async function calculateCommission(userId, amount, userData) {
             const level3User = await usersCollection.doc(level3Id).get();
 
             if (level3User.data && level3User.data.userType === 'A') {
-              const commission3 = amount * 0.02 * 0.01;
+              const commission3 = Math.round(amount * 0.02 * 0.01 * 100) / 100;
               log.info('calculateCommission', '三级分佣', { userId, level3Id, commission: commission3, rate: '2%' });
 
               await usersCollection.doc(level3Id).update({
