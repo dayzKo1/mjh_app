@@ -1,0 +1,31 @@
+.title {
+    margin: 0;
+    line-height: 1.2;
+    font-size: 2rem;
+    padding-top: 1.5rem;
+    z-index: 1;
+    background: linear-gradient(135deg, #e0e0e0 0%, #b0b0c0 50%, #9090a0 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.3));
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    position: relative;
+
+}
+
+.title,
+.description {
+    text-align: center;
+}
+
+.description {
+    margin: 0;
+    line-height: 1.6;
+    font-size: 1rem;
+    font-weight: 400;
+    padding-top: 1rem;
+    color: rgba(255, 255, 255, 0.6);
+    letter-spacing: 0.02em;
+}

@@ -1,0 +1,19 @@
+{
+  "pages": [
+    "pages/game/game"
+  ],
+  "window": {
+    "navigationBarTitleText": "中国龙2 - 麻将消消乐",
+    "navigationBarBackgroundColor": "#8dac85",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#8dac85",
+    "backgroundTextStyle": "light"
+  },
+  "networkTimeout": {
+    "request": 10000,
+    "connectSocket": 10000,
+    "uploadFile": 10000,
+    "downloadFile": 10000
+  },
+  "debug": false
+}

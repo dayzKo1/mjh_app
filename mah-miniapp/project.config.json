@@ -1,0 +1,13 @@
+{
+  "miniprogramRoot": "./",
+  "compileType": "miniprogram",
+  "projectname": "mah-sheep-game",
+  "setting": {
+    "es6": true,
+    "postcss": true,
+    "minified": true,
+    "newFeature": true
+  },
+  "appid": "",
+  "condition": {}
+}

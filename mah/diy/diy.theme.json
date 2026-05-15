@@ -1,0 +1,149 @@
+{
+    "title": "中国龙2",
+    "desc": "",
+    "dark": true,
+    "background": "",
+    "backgroundBlur": false,
+    "backgroundColor": "#1a1a2e",
+    "pure": true,
+    "maxLevel": 10,
+    "icons": [
+        {
+            "name": "Bamboo_1",
+            "content": "/mahjong/Bamboo_1.png"
+        },
+        {
+            "name": "Bamboo_2",
+            "content": "/mahjong/Bamboo_2.png"
+        },
+        {
+            "name": "Bamboo_3",
+            "content": "/mahjong/Bamboo_3.png"
+        },
+        {
+            "name": "Bamboo_4",
+            "content": "/mahjong/Bamboo_4.png"
+        },
+        {
+            "name": "Bamboo_5",
+            "content": "/mahjong/Bamboo_5.png"
+        },
+        {
+            "name": "Bamboo_6",
+            "content": "/mahjong/Bamboo_6.png"
+        },
+        {
+            "name": "Bamboo_7",
+            "content": "/mahjong/Bamboo_7.png"
+        },
+        {
+            "name": "Bamboo_8",
+            "content": "/mahjong/Bamboo_8.png"
+        },
+        {
+            "name": "Bamboo_9",
+            "content": "/mahjong/Bamboo_9.png"
+        },
+        {
+            "name": "Char_1",
+            "content": "/mahjong/Char_1.png"
+        },
+        {
+            "name": "Char_2",
+            "content": "/mahjong/Char_2.png"
+        },
+        {
+            "name": "Char_3",
+            "content": "/mahjong/Char_3.png"
+        },
+        {
+            "name": "Char_4",
+            "content": "/mahjong/Char_4.png"
+        },
+        {
+            "name": "Char_5",
+            "content": "/mahjong/Char_5.png"
+        },
+        {
+            "name": "Char_6",
+            "content": "/mahjong/Char_6.png"
+        },
+        {
+            "name": "Char_7",
+            "content": "/mahjong/Char_7.png"
+        },
+        {
+            "name": "Char_8",
+            "content": "/mahjong/Char_8.png"
+        },
+        {
+            "name": "Char_9",
+            "content": "/mahjong/Char_9.png"
+        },
+        {
+            "name": "Wheel_1",
+            "content": "/mahjong/Wheel_1.png"
+        },
+        {
+            "name": "Wheel_2",
+            "content": "/mahjong/Wheel_2.png"
+        },
+        {
+            "name": "Wheel_3",
+            "content": "/mahjong/Wheel_3.png"
+        },
+        {
+            "name": "Wheel_4",
+            "content": "/mahjong/Wheel_4.png"
+        },
+        {
+            "name": "Wheel_5",
+            "content": "/mahjong/Wheel_5.png"
+        },
+        {
+            "name": "Wheel_6",
+            "content": "/mahjong/Wheel_6.png"
+        },
+        {
+            "name": "Wheel_7",
+            "content": "/mahjong/Wheel_7.png"
+        },
+        {
+            "name": "Wheel_8",
+            "content": "/mahjong/Wheel_8.png"
+        },
+        {
+            "name": "Wheel_9",
+            "content": "/mahjong/Wheel_9.png"
+        },
+        {
+            "name": "Wind_East",
+            "content": "/mahjong/Wind_East.png"
+        },
+        {
+            "name": "Wind_South",
+            "content": "/mahjong/Wind_South.png"
+        },
+        {
+            "name": "Wind_West",
+            "content": "/mahjong/Wind_West.png"
+        },
+        {
+            "name": "Wind_North",
+            "content": "/mahjong/Wind_North.png"
+        },
+        {
+            "name": "Dragon_Green",
+            "content": "/mahjong/Dragon_Green.png"
+        },
+        {
+            "name": "Dragon_Red",
+            "content": "/mahjong/Dragon_Red.png"
+        },
+        {
+            "name": "Dragon_White",
+            "content": "/mahjong/Dragon_White.png"
+        }
+    ],
+    "sounds": []
+}

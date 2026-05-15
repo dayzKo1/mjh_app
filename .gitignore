@@ -1,0 +1,89 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist/
+build/
+out/
+.next/
+.nuxt/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment files
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Cache
+.cache/
+.parcel-cache/
+.turbo/
+.eslintcache
+.stylelintcache
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# OS files
+Thumbs.db
+Desktop.ini
+
+# Rust / Tauri
+target/
+Cargo.lock
+*.pdb
+
+# Android
+*.apk
+*.apks
+*.aab
+*.keystore
+*.jks
+*.idsig
+
+# iOS
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Cloud functions
+backend/cloudfunctions/*/node_modules/
+backend/cloudfunctions/shared/node_modules/
+
+# Admin
+admin/dist/
+admin/node_modules/
+
+# Mah (Web)
+mah/node_modules/
+mah/dist/
+
+# Mah Miniapp
+mah-miniapp/node_modules/
+
+# Tauri
+tauri-app/src-tauri/target/
+tauri-app/node_modules/

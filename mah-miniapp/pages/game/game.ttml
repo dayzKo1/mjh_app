@@ -1,0 +1,53 @@
+<!-- 游戏页面 - 羊了个羊玩法 -->
+<view class="container">
+  <view class="header">麻将消消乐</view>
+
+  <view class="info">
+    <text>第{{level}}关</text>
+    <text>得分:{{score}}</text>
+    <text>用时:{{time}}s</text>
+  </view>
+
+  <!-- 游戏区域 -->
+  <view class="game-area">
+    <view
+      tt:for="{{cards}}"
+      tt:key="id"
+      class="card {{item.isCover ? 'covered' : ''}} {{item.status === 2 ? 'removed' : ''}} {{item.status === 1 ? 'picked' : ''}}"
+      data-index="{{index}}"
+      bindtap="onCardTap"
+      animation="{{cardAnimations[item.id]}}"
+      style="left:{{item.x}}rpx; top:{{item.y}}rpx; z-index:{{10 + item.layer}};"
+    >
+      <image
+        class="card-img"
+        src="/images/{{item.icon}}.png"
+        mode="aspectFit"
+      />
+    </view>
+  </view>
+
+  <!-- 暂存槽 -->
+  <view class="slots">
+    <view
+      tt:for="{{slots}}"
+      tt:key="index"
+      class="slot {{item ? 'filled' : ''}}"
+      animation="{{slotAnimations[index]}}"
+    >
+      <image
+        tt:if="{{item}}"
+        class="slot-img"
+        src="/images/{{item.icon}}.png"
+        mode="aspectFit"
+      />
+    </view>
+  </view>
+
+  <!-- 按钮 -->
+  <view class="btns">
+    <view class="btn" bindtap="undo">撤销</view>
+    <view class="btn" bindtap="shuffle">洗牌</view>
+    <view class="btn" bindtap="restartGame">重玩</view>
+  </view>
+</view>
