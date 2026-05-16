@@ -61,6 +61,7 @@
     <view class="ad-reward-btn" bindtap="watchAdForRevive">
       <text class="ad-reward-icon">🎬</text>
       <text class="ad-reward-text">看广告复活</text>
+      <image class="ad-video-icon" src="/images/icons/ad_video_icon.png" mode="aspectFit" />
     </view>
   </view>
 
@@ -113,7 +114,7 @@
       </view>
       <view class="ad-transition-divider"></view>
       <view class="ad-transition-tip" tt:if="{{adCountdown > 0}}">
-        广告 {{adCountdown}}s 后可继续
+        {{adCountdown}}s 后可继续
       </view>
       <view
         class="ad-continue-btn {{adCountdown > 0 ? 'disabled' : ''}}"

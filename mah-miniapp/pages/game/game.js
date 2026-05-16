@@ -497,15 +497,15 @@ Page({
 
     this.saveGameRecord();
 
-    this.setData({ showAdTransition: true, adCountdown: 5 });
+    this.setData({ showAdTransition: true, adCountdown: 3 });
 
     this.showLevelAd();
   },
 
   /**
    * 展示过关插屏广告
-   * 广告展示成功后开始倒计时，倒计时结束才能继续
-   * 广告展示失败则跳过广告直接继续
+   * 广告展示为非强制，失败时直接允许继续
+   * 倒计时仅用于广告展示后的短暂等待，不可阻断用户流程
    */
   async showLevelAd() {
     try {
@@ -521,12 +521,14 @@ Page({
             console.warn('插屏广告上报失败:', error.message);
           }
         }
+        this.startAdCountdown();
+      } else {
+        this.setData({ adCountdown: 0 });
       }
     } catch (error) {
       console.warn('插屏广告展示失败:', error.message);
+      this.setData({ adCountdown: 0 });
     }
-
-    this.startAdCountdown();
   },
 
   /**
@@ -534,7 +536,7 @@ Page({
    * 倒计时结束后显示继续按钮
    */
   startAdCountdown() {
-    let count = 5;
+    let count = 3;
     this.setData({ adCountdown: count });
 
     this._adTimer = setInterval(() => {
@@ -550,7 +552,7 @@ Page({
 
   /**
    * 继续下一关
-   * 倒计时结束后点击继续
+   * 倒计时结束或广告未展示时均可点击继续
    */
   continueToNextLevel() {
     if (this.data.adCountdown > 0) return;
@@ -589,6 +591,7 @@ Page({
 
   /**
    * 看广告复活 - 清空暂存槽继续游戏
+   * 广告失败时仍允许复活（兜底处理，避免用户流程中断）
    */
   async watchAdForRevive() {
     if (!this.data.gameOverState) return;
@@ -606,20 +609,25 @@ Page({
             console.warn('广告上报失败:', error.message);
           }
         }
-
-        this.setData({
-          slots: [null, null, null, null, null, null, null],
-          gameOverState: false,
-        });
-
-        this.startTimer();
-        tt.showToast({ title: '已复活，继续游戏！', icon: 'success' });
-      } else {
-        tt.showToast({ title: '需要看完广告才能复活', icon: 'none' });
       }
+
+      this.setData({
+        slots: [null, null, null, null, null, null, null],
+        gameOverState: false,
+      });
+
+      this.startTimer();
+      tt.showToast({ title: '已复活，继续游戏！', icon: 'success' });
     } catch (error) {
-      console.warn('广告复活失败:', error.message);
-      tt.showToast({ title: '广告加载失败', icon: 'none' });
+      console.warn('广告复活失败，兜底处理:', error.message);
+
+      this.setData({
+        slots: [null, null, null, null, null, null, null],
+        gameOverState: false,
+      });
+
+      this.startTimer();
+      tt.showToast({ title: '已复活，继续游戏！', icon: 'success' });
     }
   },
 

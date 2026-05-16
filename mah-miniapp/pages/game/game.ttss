@@ -301,6 +301,12 @@
   font-weight: bold;
 }
 
+.ad-video-icon {
+  width: 28rpx;
+  height: 20rpx;
+  margin-left: 8rpx;
+}
+
 /* ===== 过关广告过渡界面 ===== */
 .ad-transition {
   position: fixed;
