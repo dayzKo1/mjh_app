@@ -1,74 +1,69 @@
 /**
  * 抖音云开发调用服务
  * 使用 tt.createCloud + callContainer API 调用抖音云函数服务
+ * 所有业务逻辑统一部署在 blgb 云函数服务中，通过 module + action 路由
  */
 
 /**
  * 云环境配置
- * 部署时需替换为抖音云控制台获取的真实值
+ * serviceId 为抖音云控制台创建的云函数服务ID
  */
 const CLOUD_CONFIG = {
-  envID: 'env-JXqPdUfI6j',
-  services: {
-    user: 'user',
-    game: 'game',
-    withdraw: 'withdraw',
-    ad: 'ad',
-    admin: 'admin',
-  },
+  envID: "env-JXqPdUfI6j",
+  serviceId: "1m11ax5741bfv",
 };
+
+/** 云实例缓存 */
+let cloudInstance = null;
 
 /**
  * 获取云实例
- * 使用 tt.createCloud 创建指定环境和服务的云实例
- * @param {string} serviceId - 服务ID
  * @returns {Object} 云实例
  */
-function getCloudInstance(serviceId) {
+function getCloudInstance() {
   if (!tt.createCloud) {
-    throw new Error('当前环境不支持云开发');
+    throw new Error("当前环境不支持云开发");
   }
 
-  return tt.createCloud({
-    envID: CLOUD_CONFIG.envID,
-    serviceID: serviceId,
-  });
+  if (!cloudInstance) {
+    cloudInstance = tt.createCloud({
+      envID: CLOUD_CONFIG.envID,
+    });
+  }
+
+  return cloudInstance;
 }
 
 /**
  * 调用抖音云容器服务
- * @param {string} serviceName - 服务名称（对应 CLOUD_CONFIG.services 中的 key）
+ * @param {string} moduleName - 业务模块名称（user/game/withdraw/ad/admin）
  * @param {string} action - 操作名称
  * @param {Object} data - 业务参数
  * @returns {Promise<Object>} 返回结果
  */
-function callCloudFunction(serviceName, action, data = {}) {
+function callCloudFunction(moduleName, action, data = {}) {
   return new Promise((resolve, reject) => {
-    const serviceId = CLOUD_CONFIG.services[serviceName];
-    if (!serviceId) {
-      reject(new Error(`未知服务: ${serviceName}`));
-      return;
-    }
-
-    const cloud = getCloudInstance(serviceId);
+    const cloud = getCloudInstance();
 
     cloud.callContainer({
-      path: '/',
+      serviceId: CLOUD_CONFIG.serviceId,
+      path: "/",
       init: {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: { action, ...data },
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: { module: moduleName, action, ...data },
       },
       success: (res) => {
         if (res.statusCode === 200 && res.data) {
-          const result = typeof res.data === 'string' ? JSON.parse(res.data) : res.data;
+          const result =
+            typeof res.data === "string" ? JSON.parse(res.data) : res.data;
           resolve(result);
         } else {
           reject(new Error(`请求失败: ${res.statusCode}`));
         }
       },
       fail: (err) => {
-        reject(new Error(err.errMsg || '请求失败'));
+        reject(new Error(err.errMsg || "请求失败"));
       },
     });
   });
@@ -82,33 +77,36 @@ const userApi = {
    * 用户登录
    * @param {Object} userInfo - 用户信息
    */
-  login: (userInfo) => callCloudFunction('user', 'login', { userInfo }),
+  login: (userInfo) => callCloudFunction("user", "login", { userInfo }),
 
   /**
    * 获取用户信息
    * @param {string} userId - 用户ID
    */
-  getInfo: (userId) => callCloudFunction('user', 'getInfo', { userId }),
+  getInfo: (userId) => callCloudFunction("user", "getInfo", { userId }),
 
   /**
    * 更新用户信息
    * @param {string} userId - 用户ID
    * @param {Object} data - 更新数据
    */
-  updateInfo: (userId, data) => callCloudFunction('user', 'updateInfo', { userId, data }),
+  updateInfo: (userId, data) =>
+    callCloudFunction("user", "updateInfo", { userId, data }),
 
   /**
    * 绑定邀请人
    * @param {string} userId - 用户ID
    * @param {string} inviterId - 邀请人ID
    */
-  bindInviter: (userId, inviterId) => callCloudFunction('user', 'bindInviter', { userId, inviterId }),
+  bindInviter: (userId, inviterId) =>
+    callCloudFunction("user", "bindInviter", { userId, inviterId }),
 
   /**
    * 获取邀请列表
    * @param {string} userId - 用户ID
    */
-  getInviteList: (userId) => callCloudFunction('user', 'getInviteList', { userId }),
+  getInviteList: (userId) =>
+    callCloudFunction("user", "getInviteList", { userId }),
 };
 
 /**
@@ -123,15 +121,15 @@ const gameApi = {
    * @param {number} time - 用时
    */
   saveRecord: (userId, level, score, time) =>
-    callCloudFunction('game', 'saveRecord', { userId, level, score, time }),
+    callCloudFunction("game", "saveRecord", { userId, level, score, time }),
 
   /**
    * 获取排行榜
    * @param {string} type - 排行榜类型
    * @param {number} limit - 数量限制
    */
-  getRank: (type = 'score', limit = 100) =>
-    callCloudFunction('game', 'getRank', { type, limit }),
+  getRank: (type = "score", limit = 100) =>
+    callCloudFunction("game", "getRank", { type, limit }),
 
   /**
    * 获取用户游戏记录
@@ -139,13 +137,14 @@ const gameApi = {
    * @param {number} limit - 数量限制
    */
   getUserRecords: (userId, limit = 50) =>
-    callCloudFunction('game', 'getUserRecords', { userId, limit }),
+    callCloudFunction("game", "getUserRecords", { userId, limit }),
 
   /**
    * 获取关卡配置
    * @param {number} level - 关卡
    */
-  getLevelConfig: (level) => callCloudFunction('game', 'getLevelConfig', { level }),
+  getLevelConfig: (level) =>
+    callCloudFunction("game", "getLevelConfig", { level }),
 };
 
 /**
@@ -157,7 +156,8 @@ const withdrawApi = {
    * @param {string} userId - 用户ID
    * @param {number} amount - 提现金额
    */
-  apply: (userId, amount) => callCloudFunction('withdraw', 'apply', { userId, amount }),
+  apply: (userId, amount) =>
+    callCloudFunction("withdraw", "apply", { userId, amount }),
 
   /**
    * 获取提现记录
@@ -165,7 +165,7 @@ const withdrawApi = {
    * @param {number} limit - 数量限制
    */
   getRecords: (userId, limit = 50) =>
-    callCloudFunction('withdraw', 'getRecords', { userId, limit }),
+    callCloudFunction("withdraw", "getRecords", { userId, limit }),
 };
 
 /**
@@ -177,12 +177,13 @@ const adApi = {
    * @param {string} userId - 用户ID
    * @param {string} adType - 广告类型
    */
-  report: (userId, adType) => callCloudFunction('ad', 'report', { userId, adType }),
+  report: (userId, adType) =>
+    callCloudFunction("ad", "report", { userId, adType }),
 
   /**
    * 获取广告配置
    */
-  getConfig: () => callCloudFunction('ad', 'getConfig'),
+  getConfig: () => callCloudFunction("ad", "getConfig"),
 };
 
 module.exports = {
