@@ -79,6 +79,10 @@
       <view class="feature-icon icon-about"></view>
       <text class="feature-text">关于</text>
     </view>
+    <view class="feature-item" bindtap="onContactService">
+      <view class="feature-icon icon-service"></view>
+      <text class="feature-text">客服</text>
+    </view>
   </view>
 
   <!-- 底部提示 -->

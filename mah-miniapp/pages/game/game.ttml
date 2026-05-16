@@ -1,11 +1,15 @@
 <!-- 游戏页面 - 羊了个羊玩法 -->
 <view class="container">
-  <view class="header">麻将消消乐</view>
-
-  <view class="info">
-    <text>第{{level}}关</text>
-    <text>得分:{{score}}</text>
-    <text>用时:{{time}}s</text>
+  <!-- 顶部状态栏：标题 + 信息合并一行 -->
+  <view class="top-bar">
+    <text class="top-bar-title">麻将消消乐</text>
+    <view class="top-bar-stats">
+      <text class="top-stat">第{{level}}关</text>
+      <text class="top-stat-divider">|</text>
+      <text class="top-stat">{{score}}分</text>
+      <text class="top-stat-divider">|</text>
+      <text class="top-stat top-stat-time">{{time}}s</text>
+    </view>
   </view>
 
   <!-- 游戏区域 -->
@@ -60,31 +64,32 @@
     </view>
   </view>
 
-  <!-- 导航入口 -->
+  <!-- 底部导航：纯图标紧凑栏 -->
   <view class="nav-bar">
+    <view class="nav-item" tt:if="{{showSidebarGift}}" bindtap="onSidebarGiftTap">
+      <view class="nav-icon nav-icon-sidebar">
+        <text class="nav-icon-emoji">🎁</text>
+      </view>
+    </view>
     <view class="nav-item" bindtap="goToProfile">
       <view class="nav-icon nav-icon-profile">
-        <text class="nav-icon-emoji">👤</text>
+        <image class="nav-icon-img" src="/images/icons/nav_profile.png" mode="aspectFit" />
       </view>
-      <text class="nav-text">我的</text>
     </view>
     <view class="nav-item" bindtap="goToRank">
       <view class="nav-icon nav-icon-rank">
-        <text class="nav-icon-emoji">🏆</text>
+        <image class="nav-icon-img" src="/images/icons/nav_rank.png" mode="aspectFit" />
       </view>
-      <text class="nav-text">排行</text>
     </view>
     <view class="nav-item" bindtap="goToWithdraw">
       <view class="nav-icon nav-icon-withdraw">
-        <text class="nav-icon-emoji">💰</text>
+        <image class="nav-icon-img" src="/images/icons/nav_withdraw.png" mode="aspectFit" />
       </view>
-      <text class="nav-text">提现</text>
     </view>
     <view class="nav-item" bindtap="goToInvite">
       <view class="nav-icon nav-icon-invite">
-        <text class="nav-icon-emoji">🎁</text>
+        <image class="nav-icon-img" src="/images/icons/nav_invite.png" mode="aspectFit" />
       </view>
-      <text class="nav-text">邀请</text>
     </view>
   </view>
 
@@ -115,6 +120,43 @@
         bindtap="continueToNextLevel"
       >
         {{adCountdown > 0 ? '请等待 ' + adCountdown + 's' : '继续闯关 →'}}
+      </view>
+    </view>
+  </view>
+
+  <!-- 侧边栏复访引导弹窗 -->
+  <view class="sidebar-modal" tt:if="{{showSidebarModal}}">
+    <view class="sidebar-modal-content">
+      <view class="sidebar-modal-close" bindtap="closeSidebarModal">✕</view>
+      <view class="sidebar-modal-title">🎁 侧边栏入口奖励</view>
+      <view class="sidebar-modal-steps">
+        <view class="sidebar-step">
+          <view class="sidebar-step-num">1</view>
+          <text class="sidebar-step-text">点击下方「去首页侧边栏」按钮</text>
+        </view>
+        <view class="sidebar-step">
+          <view class="sidebar-step-num">2</view>
+          <text class="sidebar-step-text">在侧边栏，点击「麻将消消乐」</text>
+        </view>
+        <view class="sidebar-step">
+          <view class="sidebar-step-num">3</view>
+          <text class="sidebar-step-text">返回游戏，领取奖励</text>
+        </view>
+      </view>
+      <view class="sidebar-modal-reward">奖励：提示次数 +3</view>
+      <view class="sidebar-modal-btns">
+        <view
+          class="sidebar-btn sidebar-btn-go {{sidebarTaskDone ? 'hidden' : ''}}"
+          bindtap="goToSidebar"
+        >
+          去首页侧边栏
+        </view>
+        <view
+          class="sidebar-btn sidebar-btn-claim {{sidebarTaskDone ? '' : 'disabled'}}"
+          bindtap="claimSidebarReward"
+        >
+          {{sidebarTaskDone ? '立即领奖' : '未完成'}}
+        </view>
       </view>
     </view>
   </view>

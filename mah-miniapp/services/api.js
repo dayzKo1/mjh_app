@@ -28,6 +28,7 @@ function getCloudInstance() {
   if (!cloudInstance) {
     cloudInstance = tt.createCloud({
       envID: CLOUD_CONFIG.envID,
+      serviceID: CLOUD_CONFIG.serviceId,
     });
   }
 
@@ -107,6 +108,13 @@ const userApi = {
    */
   getInviteList: (userId) =>
     callCloudFunction("user", "getInviteList", { userId }),
+
+  /**
+   * 内容安全检测
+   * @param {string} content - 待检测文本
+   */
+  contentCheck: (content) =>
+    callCloudFunction("user", "contentCheck", { content }),
 };
 
 /**

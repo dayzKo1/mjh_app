@@ -223,6 +223,12 @@ Page({
     hintCount: 3,
     /** 当前提示高亮的卡片ID */
     hintCardId: null,
+    /** 是否显示侧边栏礼包入口 */
+    showSidebarGift: false,
+    /** 是否显示侧边栏引导弹窗 */
+    showSidebarModal: false,
+    /** 侧边栏任务是否已完成 */
+    sidebarTaskDone: false,
   },
 
   onLoad(options) {
@@ -238,6 +244,15 @@ Page({
     if (this.data._paused && !this.data.gameOverState) {
       this.startTimer();
       this.setData({ _paused: false });
+    }
+
+    const app = getApp();
+    if (app.globalData.sidebarSupported) {
+      this.setData({ showSidebarGift: true });
+    }
+
+    if (app.globalData.fromSidebar) {
+      this.setData({ sidebarTaskDone: true });
     }
   },
 
@@ -837,5 +852,61 @@ Page({
 
     this._pendingInviterId = null;
     this._bindRetryCount = 0;
-  }
+  },
+
+  /**
+   * 点击侧边栏礼包入口
+   * 显示引导弹窗
+   */
+  onSidebarGiftTap() {
+    const app = getApp();
+    if (app.globalData.fromSidebar) {
+      this.setData({ sidebarTaskDone: true });
+    }
+    this.setData({ showSidebarModal: true });
+  },
+
+  /**
+   * 关闭侧边栏引导弹窗
+   */
+  closeSidebarModal() {
+    this.setData({ showSidebarModal: false });
+  },
+
+  /**
+   * 跳转到首页侧边栏
+   * 调用 tt.navigateToScene 自动跳转
+   */
+  async goToSidebar() {
+    const app = getApp();
+    await app.navigateToSidebar();
+  },
+
+  /**
+   * 领取侧边栏复访奖励
+   * 从侧边栏返回后点击领取，奖励为+3提示次数
+   */
+  claimSidebarReward() {
+    const app = getApp();
+
+    if (!app.globalData.fromSidebar) {
+      tt.showToast({ title: '请先从侧边栏进入游戏', icon: 'none' });
+      return;
+    }
+
+    if (app.globalData.sidebarRewardClaimed) {
+      tt.showToast({ title: '今日已领取', icon: 'none' });
+      return;
+    }
+
+    this.setData({
+      hintCount: this.data.hintCount + 3,
+      sidebarTaskDone: true,
+      showSidebarModal: false,
+    });
+
+    app.globalData.sidebarRewardClaimed = true;
+
+    tt.showToast({ title: '领取成功！提示+3', icon: 'success' });
+  },
 });

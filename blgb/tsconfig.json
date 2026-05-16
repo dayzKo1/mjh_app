@@ -3,11 +3,13 @@
         "module": "CommonJS",
         "allowSyntheticDefaultImports": true,
         "target": "es6",
+        "lib": ["es2016"],
         "moduleResolution": "node",
         "strict": false,
         "allowJs": true,
         "skipLibCheck": true,
-        "noEmitOnError": true
+        "noEmitOnError": false,
+        "types": ["node"]
     },
   "include": ["./**/*.ts"]
 }

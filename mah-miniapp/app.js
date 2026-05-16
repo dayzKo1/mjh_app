@@ -1,16 +1,25 @@
 /**
  * 小程序入口
- * 初始化云开发、用户登录、广告模块
+ * 初始化云开发、用户登录、广告模块、侧边栏复访监听
  */
 
 const { initAds } = require('./utils/ad');
 const { userApi } = require('./services/api');
+
+/** 侧边栏场景值 */
+const SIDEBAR_SCENES = ['021036', '101036', '021012'];
 
 App({
   globalData: {
     userInfo: null,
     userId: null,
     hasLogin: false,
+    /** 是否支持侧边栏跳转 */
+    sidebarSupported: false,
+    /** 是否从侧边栏启动（最新 onShow 值） */
+    fromSidebar: false,
+    /** 今日是否已领取侧边栏奖励 */
+    sidebarRewardClaimed: false,
   },
 
   /**
@@ -32,6 +41,8 @@ App({
       console.warn('云开发检查失败:', e.message);
     }
 
+    this.checkSidebarSupport();
+
     await initAds();
 
     await this.login();
@@ -39,8 +50,75 @@ App({
     console.log('小程序初始化完成');
   },
 
-  onShow() {
-    console.log('小程序显示');
+  /**
+   * 监听 onShow 事件
+   * 必须在 onLaunch 时机同步注册，确保侧边栏热启动时能收到回调
+   */
+  onShow(options) {
+    console.log('小程序显示', options);
+
+    if (options) {
+      const scene = options.scene || '';
+      const launchFrom = options.launch_from || '';
+      const location = options.location || '';
+
+      const fromSidebar = SIDEBAR_SCENES.includes(String(scene))
+        || launchFrom === 'homepage'
+        || location === 'sidebar_card';
+
+      this.globalData.fromSidebar = fromSidebar;
+
+      if (fromSidebar) {
+        console.log('从侧边栏启动，可领取奖励');
+      }
+    }
+  },
+
+  /**
+   * 检查当前宿主是否支持侧边栏跳转
+   */
+  checkSidebarSupport() {
+    if (typeof tt.checkScene === 'function') {
+      tt.checkScene({
+        scene: 'sidebar',
+        success: (res) => {
+          this.globalData.sidebarSupported = !!res.isExist;
+          console.log('侧边栏能力检测结果:', res.isExist);
+        },
+        fail: () => {
+          this.globalData.sidebarSupported = false;
+        },
+      });
+    } else {
+      this.globalData.sidebarSupported = false;
+    }
+  },
+
+  /**
+   * 跳转到抖音首页侧边栏
+   * @returns {Promise<boolean>} 是否跳转成功
+   */
+  navigateToSidebar() {
+    return new Promise((resolve) => {
+      if (typeof tt.navigateToScene !== 'function') {
+        tt.showToast({ title: '当前版本不支持', icon: 'none' });
+        resolve(false);
+        return;
+      }
+
+      tt.navigateToScene({
+        scene: 'sidebar',
+        success: () => {
+          console.log('跳转侧边栏成功');
+          resolve(true);
+        },
+        fail: (err) => {
+          console.warn('跳转侧边栏失败:', err);
+          tt.showToast({ title: '跳转失败，请手动从侧边栏进入', icon: 'none' });
+          resolve(false);
+        },
+      });
+    });
   },
 
   /**

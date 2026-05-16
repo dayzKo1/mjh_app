@@ -69,9 +69,11 @@ function callFunction(
   action: string,
   data: Record<string, any> = {},
 ) {
-  return request.post("/", {
+  const token = localStorage.getItem('admin_token');
+  return request.post('/', {
     module: moduleName,
     action,
+    adminToken: token || '',
     ...data,
   });
 }

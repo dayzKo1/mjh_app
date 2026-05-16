@@ -138,6 +138,12 @@ async function updateInfo(params: any, context: any, db: any, _: any) {
 
     for (const field of ALLOWED_FIELDS) {
       if (data[field] !== undefined) {
+        if (field === 'nickName' && typeof data[field] === 'string') {
+          const isSafe = await checkContentSecurity(data[field]);
+          if (!isSafe) {
+            return { code: -1, message: '昵称包含违规内容，请修改' };
+          }
+        }
         updateData[field] = data[field];
       }
     }
@@ -1220,6 +1226,88 @@ async function verifyUser(userId: string, db: any): Promise<boolean> {
 }
 
 /**
+ * 文本内容安全检测
+ * 调用抖音内容安全API检测文本是否包含违法违规内容
+ * @param content 待检测文本
+ * @returns true=安全 false=包含违规内容
+ */
+async function checkContentSecurity(content: string): Promise<boolean> {
+  if (!content || content.trim().length === 0) {
+    return true;
+  }
+
+  try {
+    const dyContext = dySDK.getContext ? dySDK : null;
+    if (!dyContext) {
+      return true;
+    }
+
+    const appId = process.env.DY_APPID || '';
+    const appSecret = process.env.DY_APP_SECRET || '';
+
+    if (!appId || !appSecret) {
+      console.warn('[checkContentSecurity] 未配置DY_APPID或DY_APP_SECRET，跳过检测');
+      return true;
+    }
+
+    const tokenUrl = `https://developer.toutiao.com/api/v2/tags/text/antidirt`;
+
+    const response = await fetch(tokenUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        tasks: [{ content }],
+      }),
+    });
+
+    if (!response.ok) {
+      console.warn('[checkContentSecurity] 请求失败:', response.status);
+      return true;
+    }
+
+    const result: any = await response.json();
+
+    if (result.data && result.data.length > 0) {
+      const taskResult = result.data[0];
+      if (taskResult.predicts && taskResult.predicts.length > 0) {
+        const hasHit = taskResult.predicts.some((p: any) => p.hit === true);
+        return !hasHit;
+      }
+    }
+
+    return true;
+  } catch (error: any) {
+    console.warn('[checkContentSecurity] 检测异常:', error.message);
+    return true;
+  }
+}
+
+/**
+ * 内容安全检测接口（供前端调用）
+ */
+async function contentCheck(params: any, context: any, db: any, _: any) {
+  const { content } = params;
+
+  try {
+    if (!content || typeof content !== 'string') {
+      return { code: -1, message: '内容参数无效' };
+    }
+
+    const isSafe = await checkContentSecurity(content);
+
+    return {
+      code: 0,
+      message: '检测完成',
+      data: { safe: isSafe },
+    };
+  } catch (error: any) {
+    return { code: -1, message: '检测失败', error: error.message };
+  }
+}
+
+/**
  * 云函数入口 - 统一路由
  * 通过 module 参数区分不同业务模块
  */
@@ -1267,6 +1355,7 @@ export default async function (params: any, context: any) {
       updateInfo,
       bindInviter,
       getInviteList,
+      contentCheck,
     },
     game: {
       saveRecord,

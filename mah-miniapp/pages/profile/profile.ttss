@@ -252,6 +252,10 @@
   background: linear-gradient(135deg, #a0a0a0, #808080);
 }
 
+.icon-service {
+  background: linear-gradient(135deg, #667eea, #5a4fcf);
+}
+
 .feature-text {
   font-size: 26rpx;
   color: #fff;

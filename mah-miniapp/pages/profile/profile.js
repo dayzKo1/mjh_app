@@ -124,6 +124,34 @@ Page({
   },
 
   /**
+   * 联系客服
+   * 使用抖音IM客服能力
+   */
+  onContactService() {
+    if (typeof tt.openCustomerServiceChat === 'function') {
+      tt.openCustomerServiceChat({
+        success: () => {
+          console.log('客服窗口已打开');
+        },
+        fail: (err) => {
+          console.warn('打开客服失败:', err);
+          tt.showModal({
+            title: '联系客服',
+            content: '客服微信：mjh_service\n工作时间：9:00-18:00',
+            showCancel: false,
+          });
+        },
+      });
+    } else {
+      tt.showModal({
+        title: '联系客服',
+        content: '客服微信：mjh_service\n工作时间：9:00-18:00',
+        showCancel: false,
+      });
+    }
+  },
+
+  /**
    * 编辑昵称
    */
   onEditNickname() {
@@ -140,6 +168,16 @@ Page({
         if (res.confirm && res.content) {
           const nickName = res.content.trim();
           if (nickName.length > 0 && nickName.length <= 20) {
+            try {
+              const checkResult = await userApi.contentCheck(nickName);
+              if (checkResult.code === 0 && checkResult.data && !checkResult.data.safe) {
+                tt.showToast({ title: '昵称包含违规内容', icon: 'none' });
+                return;
+              }
+            } catch (checkErr) {
+              console.warn('内容安全检测失败，继续提交:', checkErr.message);
+            }
+
             try {
               await userApi.updateInfo(userId, { nickName });
               tt.showToast({ title: '昵称修改成功', icon: 'success' });
