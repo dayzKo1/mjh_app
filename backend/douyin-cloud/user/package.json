@@ -1,0 +1,9 @@
+{
+  "name": "user",
+  "version": "1.0.0",
+  "description": "用户服务 - 登录/信息/邀请",
+  "main": "index.js",
+  "dependencies": {
+    "@open-dy/node-server-sdk": "latest"
+  }
+}

@@ -9,7 +9,7 @@
 import axios from 'axios';
 import { message } from 'antd';
 
-const CLOUD_ENV_ID = import.meta.env.VITE_CLOUD_ENV_ID || 'your-env-id';
+const CLOUD_ENV_ID = import.meta.env.VITE_CLOUD_ENV_ID || 'env-JXqPdUfI6j';
 const API_BASE = `https://${CLOUD_ENV_ID}.api.toutiao.com/api/function`;
 
 interface ApiResult {

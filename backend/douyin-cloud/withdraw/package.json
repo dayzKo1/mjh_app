@@ -1,0 +1,9 @@
+{
+  "name": "withdraw",
+  "version": "1.0.0",
+  "description": "提现服务 - 申请/审核",
+  "main": "index.js",
+  "dependencies": {
+    "@open-dy/node-server-sdk": "latest"
+  }
+}

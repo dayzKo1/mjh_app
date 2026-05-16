@@ -1,0 +1,9 @@
+{
+  "name": "ad",
+  "version": "1.0.0",
+  "description": "广告服务 - 上报/统计",
+  "main": "index.js",
+  "dependencies": {
+    "@open-dy/node-server-sdk": "latest"
+  }
+}

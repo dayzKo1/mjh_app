@@ -15,14 +15,16 @@ App({
 
   /**
    * 小程序初始化
+   * 抖音云通过 tt.createCloud 初始化，无需手动 init
    */
   async onLaunch() {
     console.log('小程序启动', tt.getLaunchOptionsSync());
 
     try {
-      if (tt.cloud) {
-        // 抖音云无需初始化，直接使用 tt.cloud
-        console.log('云开发可用');
+      if (tt.createCloud) {
+        console.log('云开发可用（支持 tt.createCloud）');
+      } else if (tt.cloud) {
+        console.log('云开发可用（旧版 tt.cloud）');
       } else {
         console.log('当前环境不支持云开发');
       }
@@ -47,7 +49,7 @@ App({
    */
   async login() {
     try {
-      if (!tt.cloud) {
+      if (!tt.createCloud && !tt.cloud) {
         console.warn('云开发不可用，跳过登录');
         return;
       }

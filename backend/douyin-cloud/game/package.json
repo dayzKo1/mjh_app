@@ -1,0 +1,9 @@
+{
+  "name": "game",
+  "version": "1.0.0",
+  "description": "游戏服务 - 记录/排行/分佣",
+  "main": "index.js",
+  "dependencies": {
+    "@open-dy/node-server-sdk": "latest"
+  }
+}

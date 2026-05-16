@@ -1,24 +1,58 @@
 /**
- * 云容器调用服务
- * 使用 tt.cloud.callContainer API 调用抖音云开发容器服务
+ * 抖音云开发调用服务
+ * 使用 tt.createCloud + callContainer API 调用抖音云函数服务
  */
 
 /**
+ * 云环境配置
+ * 部署时需替换为抖音云控制台获取的真实值
+ */
+const CLOUD_CONFIG = {
+  envID: 'env-JXqPdUfI6j',
+  services: {
+    user: 'user',
+    game: 'game',
+    withdraw: 'withdraw',
+    ad: 'ad',
+    admin: 'admin',
+  },
+};
+
+/**
+ * 获取云实例
+ * 使用 tt.createCloud 创建指定环境和服务的云实例
+ * @param {string} serviceId - 服务ID
+ * @returns {Object} 云实例
+ */
+function getCloudInstance(serviceId) {
+  if (!tt.createCloud) {
+    throw new Error('当前环境不支持云开发');
+  }
+
+  return tt.createCloud({
+    envID: CLOUD_CONFIG.envID,
+    serviceID: serviceId,
+  });
+}
+
+/**
  * 调用抖音云容器服务
- * @param {string} serviceId - 服务名称
+ * @param {string} serviceName - 服务名称（对应 CLOUD_CONFIG.services 中的 key）
  * @param {string} action - 操作名称
  * @param {Object} data - 业务参数
  * @returns {Promise<Object>} 返回结果
  */
-function callCloudFunction(serviceId, action, data = {}) {
+function callCloudFunction(serviceName, action, data = {}) {
   return new Promise((resolve, reject) => {
-    if (!tt.cloud) {
-      reject(new Error('云开发不可用'));
+    const serviceId = CLOUD_CONFIG.services[serviceName];
+    if (!serviceId) {
+      reject(new Error(`未知服务: ${serviceName}`));
       return;
     }
 
-    tt.cloud.callContainer({
-      serviceId,
+    const cloud = getCloudInstance(serviceId);
+
+    cloud.callContainer({
       path: '/',
       init: {
         method: 'POST',
@@ -46,7 +80,7 @@ function callCloudFunction(serviceId, action, data = {}) {
 const userApi = {
   /**
    * 用户登录
-   * @param {Object} userInfo - 用户信息，包含 openId
+   * @param {Object} userInfo - 用户信息
    */
   login: (userInfo) => callCloudFunction('user', 'login', { userInfo }),
 
@@ -152,6 +186,7 @@ const adApi = {
 };
 
 module.exports = {
+  CLOUD_CONFIG,
   userApi,
   gameApi,
   withdrawApi,

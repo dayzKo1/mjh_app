@@ -1,0 +1,9 @@
+{
+  "name": "admin",
+  "version": "1.0.0",
+  "description": "管理服务 - 用户管理/统计/提现审核",
+  "main": "index.js",
+  "dependencies": {
+    "@open-dy/node-server-sdk": "latest"
+  }
+}
