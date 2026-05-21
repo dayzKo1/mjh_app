@@ -1,4 +1,5 @@
 {
   "navigationBarTitleText": "排行榜",
+  "pageOrientation": "landscape",
   "usingComponents": {}
 }

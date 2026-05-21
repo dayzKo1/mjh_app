@@ -1,14 +1,13 @@
 {
-    "miniprogramRoot": "./",
-    "compileType": "miniprogram",
-    "projectname": "mah-sheep-game",
-    "setting": {
-        "es6": true,
-        "postcss": true,
-        "minified": true,
-        "newFeature": true
-    },
-    "deviceOrientation": "landscape",
-    "appid": "tt12ec64518c8bd5db02",
-    "condition": {}
+  "compileType": "game",
+  "miniprogramRoot": "./",
+  "projectname": "mahjong-match-game",
+  "setting": {
+    "es6": true,
+    "postcss": true,
+    "minified": true,
+    "newFeature": true
+  },
+  "appid": "testAppId",
+  "condition": {}
 }

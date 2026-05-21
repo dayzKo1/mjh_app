@@ -1,12 +1,12 @@
 <!-- 开屏加载页面 -->
 <view class="loading-container">
   <!-- 背景 -->
-  <image class="bg-image" src="/images/loading-bg.png" mode="aspectFill" />
+  <image class="bg-image" src="images/loading-bg.png" mode="aspectFill" />
   
   <!-- 游戏Logo -->
   <view class="logo-container">
     <view class="logo-icon">
-      <image class="logo-img" src="/images/logo.png" mode="aspectFit" />
+      <image class="logo-img" src="images/logo.png" mode="aspectFit" />
     </view>
     <text class="logo-title">麻将消消乐</text>
     <text class="logo-subtitle">三消益智游戏</text>

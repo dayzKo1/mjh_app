@@ -1,4 +1,5 @@
 {
   "navigationBarTitleText": "个人中心",
+  "pageOrientation": "landscape",
   "usingComponents": {}
 }

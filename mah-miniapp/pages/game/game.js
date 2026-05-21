@@ -4,7 +4,7 @@
  */
 
 const { showRewardedAd } = require('../../utils/ad');
-const { playSound, preloadSounds } = require('../../utils/sound');
+const { playSound, preloadSounds, destroySounds } = require('../../utils/sound');
 
 const MAHJONG_TILES = [
   'Bamboo_1', 'Bamboo_2', 'Bamboo_3', 'Bamboo_4', 'Bamboo_5',
@@ -190,12 +190,24 @@ Page({
 
   onShow() {
     this.initGame();
+
+    const app = getApp();
+    if (app.globalData.sidebarSupported) {
+      this.setData({ showSidebarGift: true });
+    }
+    if (app.globalData.fromSidebar) {
+      this.setData({ sidebarTaskDone: true });
+    }
   },
 
   onUnload() {
     if (this.data.timer) {
       clearInterval(this.data.timer);
     }
+    if (this._adTimer) {
+      clearInterval(this._adTimer);
+    }
+    destroySounds();
   },
 
   initGame() {
@@ -442,6 +454,7 @@ Page({
   checkWin() {
     clearInterval(this.data.timer);
     playSound('win');
+    playSound('unlock');
     this.setData({ showWinModal: true, gameOverState: true });
   },
 
@@ -721,5 +734,48 @@ Page({
 
   goToRank() {
     tt.navigateTo({ url: '/pages/rank/rank' });
+  },
+
+  // ========== 侧边栏复访 ==========
+
+  onSidebarGiftTap() {
+    playSound('modal');
+    const app = getApp();
+    if (app.globalData.fromSidebar) {
+      this.setData({ sidebarTaskDone: true });
+    }
+    this.setData({ showSidebarModal: true });
+  },
+
+  closeSidebarModal() {
+    playSound('close-modal');
+    this.setData({ showSidebarModal: false });
+  },
+
+  async goToSidebar() {
+    playSound('click');
+    const app = getApp();
+    await app.navigateToSidebar();
+  },
+
+  claimSidebarReward() {
+    const app = getApp();
+    if (!app.globalData.fromSidebar) {
+      tt.showToast({ title: '请先从侧边栏进入游戏', icon: 'none' });
+      return;
+    }
+    if (app.globalData.sidebarRewardClaimed) {
+      tt.showToast({ title: '今日已领取', icon: 'none' });
+      return;
+    }
+
+    playSound('reward');
+    this.setData({
+      hintCount: this.data.hintCount + 3,
+      sidebarTaskDone: true,
+      showSidebarModal: false,
+    });
+    app.globalData.sidebarRewardClaimed = true;
+    tt.showToast({ title: '领取成功！提示+3', icon: 'success' });
   },
 });

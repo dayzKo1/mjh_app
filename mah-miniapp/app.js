@@ -4,6 +4,7 @@
  */
 
 const { initAds } = require('./utils/ad');
+const { initSound } = require('./utils/sound');
 const { userApi } = require('./services/api');
 
 /** 侧边栏场景值 */
@@ -44,6 +45,7 @@ App({
     this.checkSidebarSupport();
 
     await initAds();
+    initSound();
 
     await this.login();
 
