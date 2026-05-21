@@ -1,5 +1,7 @@
 {
   "pages": [
+    "pages/loading/loading",
+    "pages/levels/levels",
     "pages/game/game",
     "pages/profile/profile",
     "pages/rank/rank",
@@ -8,9 +10,9 @@
   ],
   "window": {
     "navigationBarTitleText": "麻将消消乐",
-    "navigationBarBackgroundColor": "#2d5a27",
+    "navigationBarBackgroundColor": "#1a1a2e",
     "navigationBarTextStyle": "white",
-    "backgroundColor": "#2d5a27",
+    "backgroundColor": "#16213e",
     "backgroundTextStyle": "light"
   },
   "networkTimeout": {

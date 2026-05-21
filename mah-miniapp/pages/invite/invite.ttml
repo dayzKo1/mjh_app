@@ -37,15 +37,15 @@
   <view class="rules-card">
     <view class="rules-title">分佣规则</view>
     <view class="rules-item">
-      <text class="rules-icon">🥇</text>
+      <image class="rules-icon-img" src="/images/icons/rank_1.png" mode="aspectFit" />
       <text class="rules-text">一级好友佣金：10%</text>
     </view>
     <view class="rules-item">
-      <text class="rules-icon">🥈</text>
+      <image class="rules-icon-img" src="/images/icons/rank_2.png" mode="aspectFit" />
       <text class="rules-text">二级好友佣金：5%</text>
     </view>
     <view class="rules-item">
-      <text class="rules-icon">🥉</text>
+      <image class="rules-icon-img" src="/images/icons/rank_3.png" mode="aspectFit" />
       <text class="rules-text">三级好友佣金：2%</text>
     </view>
     <view class="rules-tip">绑定邀请人后，B类用户自动升级为A类</view>

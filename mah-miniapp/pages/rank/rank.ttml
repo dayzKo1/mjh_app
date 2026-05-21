@@ -34,7 +34,9 @@
     >
       <!-- 排名 -->
       <view class="rank-number">
-        <text tt:if="{{index < 3}}">{{index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'}}</text>
+        <image tt:if="{{index === 0}}" class="rank-medal" src="/images/icons/rank_1.png" mode="aspectFit" />
+        <image tt:elif="{{index === 1}}" class="rank-medal" src="/images/icons/rank_2.png" mode="aspectFit" />
+        <image tt:elif="{{index === 2}}" class="rank-medal" src="/images/icons/rank_3.png" mode="aspectFit" />
         <text tt:else>{{index + 1}}</text>
       </view>
 

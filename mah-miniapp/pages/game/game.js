@@ -1,12 +1,11 @@
 /**
- * 游戏页面 - 羊了个羊玩法
- * 接入云开发API：登录、保存记录、广告上报
+ * 游戏页面 - 马将消消乐横屏版
+ * 支持广告复活、道具看广告使用、倒计时警告
  */
 
-const { showRewardedAd, showBannerAd, hideBannerAd, showInterstitialAd, preloadInterstitialAd } = require('../../utils/ad');
-const { gameApi, adApi, userApi } = require('../../services/api');
+const { showRewardedAd } = require('../../utils/ad');
+const { playSound, preloadSounds } = require('../../utils/sound');
 
-/** 麻将牌类型（与images目录下的文件名对应） */
 const MAHJONG_TILES = [
   'Bamboo_1', 'Bamboo_2', 'Bamboo_3', 'Bamboo_4', 'Bamboo_5',
   'Bamboo_6', 'Bamboo_7', 'Bamboo_8', 'Bamboo_9',
@@ -18,21 +17,10 @@ const MAHJONG_TILES = [
   'Dragon_Red', 'Dragon_Green', 'Dragon_White'
 ];
 
-/** 暂存槽最大容量 */
 const MAX_SLOTS = 7;
+const CARD_W_RPX = 72;
+const CARD_H_RPX = 96;
 
-/** 卡片宽度rpx */
-const CARD_W_RPX = 88;
-
-/** 卡片高度rpx */
-const CARD_H_RPX = 116;
-
-/** 卡片间距rpx */
-const CARD_GAP_RPX = 8;
-
-/**
- * 洗牌算法
- */
 function shuffleArray(arr) {
   const res = arr.slice();
   for (let i = res.length - 1; i > 0; i--) {
@@ -42,23 +30,15 @@ function shuffleArray(arr) {
   return res;
 }
 
-/**
- * 生成唯一ID
- */
 function generateId() {
   return Math.random().toString(36).substring(2, 8) + Date.now().toString(36).slice(-4);
 }
 
-/**
- * 生成关卡场景
- * 保证可解：每种牌3张（3的倍数），总共一定能消除完
- */
 function generateScene(level) {
-  const iconCount = Math.min(8 + Math.floor(level / 2), MAHJONG_TILES.length);
+  const iconCount = Math.min(6 + Math.floor((level - 1) / 2), MAHJONG_TILES.length);
   const selectedIcons = MAHJONG_TILES.slice(0, iconCount);
   const layers = level <= 2 ? 3 : level <= 5 ? 4 : 5;
 
-  // 每种牌3张，保证可解
   const allCards = [];
   selectedIcons.forEach(icon => {
     for (let i = 0; i < 3; i++) {
@@ -68,41 +48,31 @@ function generateScene(level) {
 
   const shuffledCards = shuffleArray(allCards);
   const totalCards = shuffledCards.length;
-
   const scene = [];
   let cardIndex = 0;
 
-  // 游戏区域宽高（rpx），需与 ttss 中 .game-area 的 max-width/max-height 匹配
-  const areaW = 710;
-  const areaH = 620;
+  const areaW = 600;
+  const areaH = 400;
 
   for (let layer = 0; layer < layers && cardIndex < totalCards; layer++) {
-    let layerCards;
-    if (layer === layers - 1) {
-      layerCards = totalCards - cardIndex;
-    } else {
-      layerCards = Math.min(Math.ceil(totalCards / layers) + 2, totalCards - cardIndex);
-    }
+    let layerCards = layer === layers - 1 
+      ? totalCards - cardIndex 
+      : Math.min(Math.ceil(totalCards / layers) + 2, totalCards - cardIndex);
 
     const cols = layer === 0 ? 5 : 4;
     const rows = Math.ceil(layerCards / cols);
-
-    // 每层偏移，形成覆盖效果
-    const offsetX = layer * 20;
-    const offsetY = layer * 15;
-
-    // 计算网格起始位置（居中）
-    const gridWidth = cols * (CARD_W_RPX + CARD_GAP_RPX);
-    const gridHeight = rows * (CARD_H_RPX + CARD_GAP_RPX);
+    const offsetX = layer * 12;
+    const offsetY = layer * 8;
+    const gridWidth = cols * (CARD_W_RPX + 6);
+    const gridHeight = rows * (CARD_H_RPX + 6);
     const startX = (areaW - gridWidth) / 2;
     const startY = (areaH - gridHeight) / 2;
 
     for (let i = 0; i < layerCards && cardIndex < totalCards; i++) {
       const col = i % cols;
       const row = Math.floor(i / cols);
-
-      const x = startX + col * (CARD_W_RPX + CARD_GAP_RPX) + offsetX + (Math.random() - 0.5) * 6;
-      const y = startY + row * (CARD_H_RPX + CARD_GAP_RPX) + offsetY + (Math.random() - 0.5) * 6;
+      const x = startX + col * (CARD_W_RPX + 6) + offsetX + (Math.random() - 0.5) * 4;
+      const y = startY + row * (CARD_H_RPX + 6) + offsetY + (Math.random() - 0.5) * 4;
 
       scene.push({
         id: generateId(),
@@ -120,9 +90,6 @@ function generateScene(level) {
   return checkCover(scene.sort((a, b) => a.layer - b.layer));
 }
 
-/**
- * 计算两个矩形的重叠面积比例
- */
 function calculateOverlap(x1, y1, x2, y2, x3, y3, x4, y4) {
   const ox1 = Math.max(x1, x3);
   const oy1 = Math.max(y1, y3);
@@ -130,16 +97,11 @@ function calculateOverlap(x1, y1, x2, y2, x3, y3, x4, y4) {
   const oy2 = Math.min(y2, y4);
 
   if (ox1 >= ox2 || oy1 >= oy2) return 0;
-
   const overlapArea = (ox2 - ox1) * (oy2 - oy1);
   const minArea = Math.min((x2 - x1) * (y2 - y1), (x4 - x3) * (y4 - y3));
-
   return overlapArea / minArea;
 }
 
-/**
- * 检查覆盖状态 - 被上层卡片遮挡超过30%则不可点击
- */
 function checkCover(scene) {
   for (let i = 0; i < scene.length; i++) {
     const cur = scene[i];
@@ -160,18 +122,11 @@ function checkCover(scene) {
       }
     }
   }
-
   return scene;
 }
 
-/**
- * 将暂存槽中的卡片按图标分组排列（羊了个羊核心特性）
- * 相同图标自动靠在一起，方便三消
- */
 function arrangeSlots(slots) {
   const filled = slots.filter(s => s !== null);
-
-  // 按图标名分组，保持首次出现顺序
   const groups = {};
   const order = [];
   filled.forEach(card => {
@@ -182,17 +137,14 @@ function arrangeSlots(slots) {
     groups[card.icon].push(card);
   });
 
-  // 展开分组
   const arranged = [];
   order.forEach(iconName => {
     arranged.push(...groups[iconName]);
   });
 
-  // 补齐空位
   while (arranged.length < MAX_SLOTS) {
     arranged.push(null);
   }
-
   return arranged;
 }
 
@@ -200,114 +152,203 @@ Page({
   data: {
     level: 1,
     score: 0,
-    time: 0,
     cards: [],
     slots: [null, null, null, null, null, null, null],
     timer: null,
     animating: false,
-    /** 每张卡片的动画数据，key为 card.id */
     cardAnimations: {},
-    /** 暂存槽每个位置的动画数据，key为 slot index */
-    slotAnimations: {},
-    /** 正在飞行的卡片 ID */
-    flyingCardId: null,
-    /** 游戏是否已结束 */
     gameOverState: false,
-    /** 过关广告过渡状态 */
-    showAdTransition: false,
-    /** 过关倒计时 */
-    adCountdown: 5,
-    /** 撤销操作历史栈 */
-    undoStack: [],
-    /** 提示剩余次数 */
-    hintCount: 3,
-    /** 当前提示高亮的卡片ID */
+    
+    undoCount: 3,
+    findCount: 3,
+    bombCount: 2,
+    
+    showUndoPanel: false,
+    showFindPanel: false,
+    showBombPanel: false,
+    undoCandidates: [],
+    findCandidates: [],
+    bombCandidates: [],
     hintCardId: null,
-    /** 是否显示侧边栏礼包入口 */
-    showSidebarGift: false,
-    /** 是否显示侧边栏引导弹窗 */
-    showSidebarModal: false,
-    /** 侧边栏任务是否已完成 */
-    sidebarTaskDone: false,
+    
+    timeProgress: 100,
+    hasUsedTimeAd: false,
+    hasUsedReviveAd: false,
+    
+    showWinModal: false,
+    showFailModal: false,
+    showTimeWarningModal: false,
+    
+    savedProgress: null,
   },
 
   onLoad(options) {
-    this.initGame();
-    if (options && options.inviterId) {
-      this._pendingInviterId = options.inviterId;
-      this.tryBindInviter();
-    }
+    const level = parseInt(options.level) || 1;
+    this.setData({ level });
+    preloadSounds();
   },
 
   onShow() {
-    showBannerAd();
-    if (this.data._paused && !this.data.gameOverState) {
-      this.startTimer();
-      this.setData({ _paused: false });
-    }
-
-    const app = getApp();
-    if (app.globalData.sidebarSupported) {
-      this.setData({ showSidebarGift: true });
-    }
-
-    if (app.globalData.fromSidebar) {
-      this.setData({ sidebarTaskDone: true });
-    }
-  },
-
-  onHide() {
-    hideBannerAd();
-    if (this.data.timer) {
-      clearInterval(this.data.timer);
-      this.setData({ _paused: true });
-    }
+    this.initGame();
   },
 
   onUnload() {
     if (this.data.timer) {
       clearInterval(this.data.timer);
     }
-    hideBannerAd();
   },
 
-  /** 初始化游戏 */
   initGame() {
-    const cards = generateScene(this.data.level);
+    const level = this.data.level;
+    const cards = generateScene(level);
 
-    console.log('生成卡片数量:', cards.length);
-    console.log('前3张卡片:', JSON.stringify(cards.slice(0, 3)));
+    console.log('关卡', level, '卡片数', cards.length);
 
     this.setData({
       cards,
       slots: [null, null, null, null, null, null, null],
       animating: false,
       gameOverState: false,
-      showAdTransition: false,
-      undoStack: [],
-      hintCount: 3,
+      undoCount: 3,
+      findCount: 3,
+      bombCount: 2,
+      showUndoPanel: false,
+      showFindPanel: false,
+      showBombPanel: false,
+      undoCandidates: [],
+      findCandidates: [],
+      bombCandidates: [],
+      hintCardId: null,
+      timeProgress: 100,
+      hasUsedTimeAd: false,
+      hasUsedReviveAd: false,
+      savedProgress: null,
+      showWinModal: false,
+      showFailModal: false,
+      showTimeWarningModal: false,
     });
 
     this.startTimer();
-    preloadInterstitialAd();
   },
 
-  /** 开始计时器 */
+  saveCurrentProgress() {
+    this.setData({
+      savedProgress: {
+        cards: this.data.cards.map(c => ({ ...c })),
+        slots: this.data.slots.map(s => s ? { ...s } : null),
+        score: this.data.score,
+        undoCount: this.data.undoCount,
+        findCount: this.data.findCount,
+        bombCount: this.data.bombCount,
+      }
+    });
+  },
+
   startTimer() {
     if (this.data.timer) {
       clearInterval(this.data.timer);
     }
 
+    let warningShown = false;
+
     const timer = setInterval(() => {
-      this.setData({ time: this.data.time + 1 });
+      let timeProgress = this.data.timeProgress - 2;
+      
+      if (timeProgress <= 0) {
+        clearInterval(timer);
+        this.onTimeOut();
+        return;
+      }
+
+      if (timeProgress < 20 && !warningShown && !this.data.hasUsedTimeAd) {
+        warningShown = true;
+        this.saveCurrentProgress();
+        playSound('warning');
+        this.setData({ showTimeWarningModal: true });
+      }
+      
+      this.setData({ timeProgress });
     }, 1000);
 
     this.setData({ timer });
   },
 
-  /** 点击卡片 */
+  addTimeProgress() {
+    let timeProgress = Math.min(100, this.data.timeProgress + 8);
+    this.setData({ timeProgress });
+  },
+
+  onTimeOut() {
+    clearInterval(this.data.timer);
+    playSound('lose');
+    this.saveCurrentProgress();
+    this.setData({ showFailModal: true, gameOverState: true });
+  },
+
+  async watchAdForTime() {
+    playSound('click');
+    const result = await showRewardedAd((isCompleted) => {
+      if (isCompleted) {
+        this.setData({
+          timeProgress: Math.min(100, this.data.timeProgress + 30),
+          showTimeWarningModal: false,
+          hasUsedTimeAd: true,
+        });
+        playSound('reward');
+        this.startTimer();
+        tt.showToast({ title: '+30秒', icon: 'success' });
+      }
+    });
+    
+    if (!result) {
+      tt.showToast({ title: '广告加载失败', icon: 'none' });
+    }
+  },
+
+  continueWithoutAd() {
+    playSound('click');
+    this.setData({ showTimeWarningModal: false });
+  },
+
+  async watchAdToRevive() {
+    if (this.data.hasUsedReviveAd) {
+      tt.showToast({ title: '每局只能复活一次', icon: 'none' });
+      return;
+    }
+    
+    playSound('click');
+    const result = await showRewardedAd((isCompleted) => {
+      if (isCompleted) {
+        const saved = this.data.savedProgress;
+        if (saved) {
+          this.setData({
+            cards: saved.cards,
+            slots: saved.slots,
+            score: saved.score,
+            undoCount: saved.undoCount,
+            findCount: saved.findCount,
+            bombCount: saved.bombCount,
+            showFailModal: false,
+            gameOverState: false,
+            timeProgress: 50,
+            hasUsedReviveAd: true,
+          });
+          playSound('reward');
+          this.startTimer();
+          tt.showToast({ title: '复活成功!', icon: 'success' });
+        }
+      }
+    });
+    
+    if (!result) {
+      tt.showToast({ title: '广告加载失败', icon: 'none' });
+    }
+  },
+
   onCardTap(e) {
     if (this.data.animating || this.data.gameOverState) return;
+
+    playSound('pickup');
 
     const index = e.currentTarget.dataset.index;
     const cards = this.data.cards.slice();
@@ -318,603 +359,367 @@ Page({
     const slots = this.data.slots.slice();
     const emptyIndex = slots.findIndex(s => s === null);
     if (emptyIndex === -1) {
-      tt.showToast({ title: '暂存槽已满!', icon: 'none' });
+      this.checkSlotsFull();
       return;
     }
 
-    this.setData({ animating: true, flyingCardId: card.id });
-
-    if (this._animatingTimer) clearTimeout(this._animatingTimer);
-    this._animatingTimer = setTimeout(() => {
-      if (this.data.animating) {
-        this.setData({ animating: false });
-      }
-    }, 3000);
-
-    // 第一步：拾取动画（弹起 + 发光）
-    this.playPickupAnimation(card.id, () => {
-      const undoStack = this.data.undoStack.slice();
-      undoStack.push({
-        cards: this.data.cards.map(c => ({ ...c })),
-        slots: this.data.slots.map(s => s ? { ...s } : null),
-        score: this.data.score,
-      });
-      if (undoStack.length > 20) undoStack.shift();
-
-      card.status = 1;
-      slots[emptyIndex] = card;
-      const arranged = arrangeSlots(slots);
-
-      const cardAnimations = this.data.cardAnimations;
-      delete cardAnimations[card.id];
-
-      this.setData({
-        cards: checkCover(cards),
-        slots: arranged,
-        cardAnimations,
-        flyingCardId: null,
-        undoStack,
-      });
-
-      // 第二步：直接检查消除（无弹入动画）
-      setTimeout(() => {
-        this.checkAndClearSlots();
-      }, 200);
-    });
-  },
-
-  /** 卡片拾取动画：弹起变大 + 发金光，动画完成后重置让 CSS 恢复原生样式 */
-  playPickupAnimation(cardId, callback) {
-    const animation = tt.createAnimation({
-      duration: 150,
-      timingFunction: 'ease-out',
-    });
-    animation.scale(1.15, 1.15).backgroundColor('#ffeb3b').step();
-    animation.scale(0.1, 0.1).opacity(0).step({ duration: 180, timingFunction: 'ease-in' });
-    /* 第三帧：瞬间重置为原生样式，让 CSS 的 .card 背景接管 */
-    animation.scale(1, 1).opacity(0).backgroundColor('transparent').step({ duration: 0 });
-
-    const cardAnimations = this.data.cardAnimations;
-    cardAnimations[cardId] = animation.export();
-
-    this.setData({ cardAnimations });
-
-    setTimeout(() => { callback(); }, 350);
-  },
-
-  /** 检查并消除暂存槽中的三连卡片 */
-  checkAndClearSlots() {
-    const slots = this.data.slots.slice();
-    const cards = this.data.cards.slice();
-
-    const iconCounts = {};
-    slots.forEach((slot, index) => {
-      if (slot) {
-        const name = slot.icon;
-        if (!iconCounts[name]) {
-          iconCounts[name] = { count: 0, indices: [] };
-        }
-        iconCounts[name].count++;
-        iconCounts[name].indices.push(index);
-      }
-    });
-
-    let cleared = false;
-    let removedIndices = [];
-    for (const name in iconCounts) {
-      if (iconCounts[name].count >= 3) {
-        removedIndices = iconCounts[name].indices.slice(0, 3);
-        removedIndices.forEach(idx => {
-          const card = slots[idx];
-          if (card) {
-            const sceneCard = cards.find(c => c.id === card.id);
-            if (sceneCard) {
-              sceneCard.status = 2;
-            }
-          }
-          slots[idx] = null;
-        });
-        cleared = true;
-        break;
-      }
-    }
-
-    if (cleared) {
-      // 消除动画：消除的槽位闪烁
-      this.playClearAnimation(removedIndices, () => {
-        // 先清理消除槽位的动画数据，再更新 slots
-        const slotAnimations = this.data.slotAnimations;
-        removedIndices.forEach(idx => {
-          delete slotAnimations[idx];
-        });
-        const arranged = arrangeSlots(slots);
-        this.setData({
-          slots: arranged,
-          cards: checkCover(cards),
-          score: this.data.score + 3,
-          slotAnimations
-        });
-
-        setTimeout(() => {
-          this.checkAndClearSlots();
-        }, 200);
-      });
-    } else {
-      this.setData({ cards: checkCover(cards), animating: false });
-
-      const remaining = cards.filter(c => c.status === 0).length;
-      if (remaining === 0) {
-        this.checkWin();
-      } else {
-        const filledCount = slots.filter(s => s !== null).length;
-        if (filledCount >= MAX_SLOTS) {
-          this.gameOver();
-        }
-      }
-    }
-  },
-
-  /** 消除动画：槽位缩小消失，完成后重置动画对象清除行内样式 */
-  playClearAnimation(indices, callback) {
-    if (!indices || indices.length === 0) {
-      callback();
-      return;
-    }
-
-    const slotAnimations = this.data.slotAnimations;
-    indices.forEach(idx => {
-      const animation = tt.createAnimation({
-        duration: 200,
-        timingFunction: 'ease-in',
-      });
-      animation.scale(0, 0).opacity(0).step();
-      slotAnimations[idx] = animation.export();
-    });
-
-    this.setData({ slotAnimations });
-
-    setTimeout(() => {
-      /* 先 export 一个空白动画对象覆盖残留行内样式，再 delete */
-      indices.forEach(idx => {
-        const resetAnim = tt.createAnimation({ duration: 0 });
-        resetAnim.opacity(1).scale(1, 1).step();
-        slotAnimations[idx] = resetAnim.export();
-      });
-      this.setData({ slotAnimations }, () => {
-        const cleanSlots = this.data.slotAnimations;
-        indices.forEach(idx => {
-          delete cleanSlots[idx];
-        });
-        this.setData({ slotAnimations: cleanSlots });
-        callback();
-      });
-    }, 220);
-  },
-
-  /** 检查胜利 */
-  checkWin() {
-    clearInterval(this.data.timer);
-
-    this.saveGameRecord();
-
-    this.setData({ showAdTransition: true, adCountdown: 3 });
-
-    this.showLevelAd();
-  },
-
-  /**
-   * 展示过关插屏广告
-   * 广告展示为非强制，失败时直接允许继续
-   * 倒计时仅用于广告展示后的短暂等待，不可阻断用户流程
-   */
-  async showLevelAd() {
-    try {
-      const adShown = await showInterstitialAd();
-
-      if (adShown) {
-        const app = getApp();
-        const userId = app.globalData.userId;
-        if (userId) {
-          try {
-            await adApi.report(userId, 'interstitial');
-          } catch (error) {
-            console.warn('插屏广告上报失败:', error.message);
-          }
-        }
-        this.startAdCountdown();
-      } else {
-        this.setData({ adCountdown: 0 });
-      }
-    } catch (error) {
-      console.warn('插屏广告展示失败:', error.message);
-      this.setData({ adCountdown: 0 });
-    }
-  },
-
-  /**
-   * 开始过关倒计时
-   * 倒计时结束后显示继续按钮
-   */
-  startAdCountdown() {
-    let count = 3;
-    this.setData({ adCountdown: count });
-
-    this._adTimer = setInterval(() => {
-      count--;
-      this.setData({ adCountdown: count });
-
-      if (count <= 0) {
-        clearInterval(this._adTimer);
-        this._adTimer = null;
-      }
-    }, 1000);
-  },
-
-  /**
-   * 继续下一关
-   * 倒计时结束或广告未展示时均可点击继续
-   */
-  continueToNextLevel() {
-    if (this.data.adCountdown > 0) return;
-
-    if (this._adTimer) {
-      clearInterval(this._adTimer);
-      this._adTimer = null;
-    }
-
-    this.setData({ showAdTransition: false });
-    this.nextLevel();
-  },
-
-  /** 游戏结束 */
-  gameOver() {
-    clearInterval(this.data.timer);
-    this.setData({ gameOverState: true });
-
-    this.saveGameRecord();
-
-    tt.showModal({
-      title: '游戏结束',
-      content: '暂存槽已满，得分: ' + this.data.score,
-      cancelText: '重新开始',
-      confirmText: '再试一次',
-      success: (res) => {
-        if (res.confirm) {
-          this.setData({ time: 0, score: 0 });
-          this.initGame();
-        } else {
-          this.restartGame();
-        }
-      }
-    });
-  },
-
-  /**
-   * 看广告复活 - 清空暂存槽继续游戏
-   * 广告失败时仍允许复活（兜底处理，避免用户流程中断）
-   */
-  async watchAdForRevive() {
-    if (!this.data.gameOverState) return;
-
-    try {
-      const app = getApp();
-      const userId = app.globalData.userId;
-      const rewarded = await showRewardedAd(userId);
-
-      if (rewarded) {
-        if (userId) {
-          try {
-            await adApi.report(userId, 'rewarded');
-          } catch (error) {
-            console.warn('广告上报失败:', error.message);
-          }
-        }
-      }
-
-      this.setData({
-        slots: [null, null, null, null, null, null, null],
-        gameOverState: false,
-      });
-
-      this.startTimer();
-      tt.showToast({ title: '已复活，继续游戏！', icon: 'success' });
-    } catch (error) {
-      console.warn('广告复活失败，兜底处理:', error.message);
-
-      this.setData({
-        slots: [null, null, null, null, null, null, null],
-        gameOverState: false,
-      });
-
-      this.startTimer();
-      tt.showToast({ title: '已复活，继续游戏！', icon: 'success' });
-    }
-  },
-
-  /**
-   * 保存游戏记录到云端
-   */
-  async saveGameRecord() {
-    const app = getApp();
-    const userId = app.globalData.userId;
-    if (!userId) {
-      console.warn('用户未登录，跳过保存记录');
-      return;
-    }
-
-    try {
-      await gameApi.saveRecord(userId, this.data.level, this.data.score, this.data.time);
-      console.log('游戏记录已保存到云端');
-    } catch (error) {
-      console.warn('保存游戏记录失败:', error.message);
-    }
-  },
-
-  /**
-   * 观看激励视频广告
-   */
-  async watchRewardedAd() {
-    const app = getApp();
-    const userId = app.globalData.userId;
-
-    const rewarded = await showRewardedAd(userId);
-    if (rewarded && userId) {
-      try {
-        const result = await adApi.report(userId, 'rewarded');
-        if (result.data && result.data.reward > 0) {
-          tt.showToast({ title: `获得${result.data.reward}元奖励`, icon: 'none' });
-        }
-      } catch (error) {
-        console.warn('广告上报失败:', error.message);
-      }
-    }
-  },
-
-  /** 撤销操作 - 从历史栈恢复上一步状态 */
-  undo() {
-    if (this.data.animating || this.data.gameOverState) return;
-
-    const undoStack = this.data.undoStack.slice();
-    if (undoStack.length === 0) {
-      tt.showToast({ title: '没有可撤销的操作', icon: 'none' });
-      return;
-    }
-
-    const prevState = undoStack.pop();
-
-    this.setData({
-      cards: checkCover(prevState.cards),
-      slots: arrangeSlots(prevState.slots),
-      score: Math.max(0, prevState.score - 1),
-      undoStack,
-    });
-
-    tt.showToast({ title: '已撤销 -1分', icon: 'none' });
-  },
-
-  /** 提示功能 - 高亮一张可点击且能与暂存槽形成三消的卡片 */
-  hint() {
-    if (this.data.animating || this.data.gameOverState) return;
-
-    if (this.data.hintCount <= 0) {
-      tt.showToast({ title: '提示次数已用完', icon: 'none' });
-      return;
-    }
-
-    const cards = this.data.cards;
-    const slots = this.data.slots;
-    const activeSlots = slots.filter(s => s !== null);
-
-    const slotIconCounts = {};
-    activeSlots.forEach(s => {
-      slotIconCounts[s.icon] = (slotIconCounts[s.icon] || 0) + 1;
-    });
-
-    let hintCard = null;
-
-    for (const card of cards) {
-      if (card.status !== 0 || card.isCover) continue;
-      if (slotIconCounts[card.icon] >= 2) {
-        hintCard = card;
-        break;
-      }
-    }
-
-    if (!hintCard) {
-      for (const card of cards) {
-        if (card.status !== 0 || card.isCover) continue;
-        if (slotIconCounts[card.icon] >= 1) {
-          hintCard = card;
-          break;
-        }
-      }
-    }
-
-    if (!hintCard) {
-      for (const card of cards) {
-        if (card.status !== 0 || card.isCover) continue;
-        hintCard = card;
-        break;
-      }
-    }
-
-    if (hintCard) {
-      this.setData({
-        hintCardId: hintCard.id,
-        hintCount: this.data.hintCount - 1,
-        score: Math.max(0, this.data.score - 1),
-      });
-
-      tt.showToast({ title: `已提示 剩余${this.data.hintCount - 1}次 -1分`, icon: 'none' });
-
-      setTimeout(() => {
-        this.setData({ hintCardId: null });
-      }, 1500);
-    } else {
-      tt.showToast({ title: '没有可提示的卡片', icon: 'none' });
-    }
-  },
-
-  /** 洗牌 - 打乱剩余卡片的图标，保持每种图标数量仍为3的倍数 */
-  shuffle() {
-    if (this.data.animating || this.data.gameOverState) return;
-
-    const cards = this.data.cards.slice();
-    const activeCards = cards.filter(c => c.status === 0);
-    if (activeCards.length === 0) return;
-
-    const icons = activeCards.map(c => c.icon);
-    for (let i = icons.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [icons[i], icons[j]] = [icons[j], icons[i]];
-    }
-
-    activeCards.forEach((card, index) => {
-      const original = cards.find(c => c.id === card.id);
-      if (original) {
-        original.icon = icons[index];
-      }
-    });
+    card.status = 1;
+    slots[emptyIndex] = card;
+    const arranged = arrangeSlots(slots);
 
     this.setData({
       cards: checkCover(cards),
-      score: Math.max(0, this.data.score - 1)
+      slots: arranged,
     });
 
-    tt.showToast({ title: '已洗牌 -1分', icon: 'none' });
-  },
+    this.addTimeProgress();
 
-  /** 重新开始 */
-  restartGame() {
-    if (this.data.timer) {
-      clearInterval(this.data.timer);
+    const remaining = cards.filter(c => c.status === 0).length;
+    if (remaining === 0) {
+      this.checkWin();
+    } else {
+      this.checkAndEliminate(arranged);
     }
-    this.setData({ level: 1, score: 0, time: 0 });
-    this.initGame();
   },
 
-  /** 下一关 */
+  checkAndEliminate(slots) {
+    const filled = slots.filter(s => s !== null);
+    const groups = {};
+    filled.forEach(card => {
+      if (!groups[card.icon]) {
+        groups[card.icon] = [];
+      }
+      groups[card.icon].push(card);
+    });
+
+    Object.keys(groups).forEach(icon => {
+      if (groups[icon].length >= 3) {
+        const toRemove = groups[icon].slice(0, 3);
+        playSound('match');
+
+        const newSlots = this.data.slots.slice();
+        toRemove.forEach(card => {
+          const idx = newSlots.findIndex(s => s && s.id === card.id);
+          if (idx !== -1) {
+            newSlots[idx] = null;
+          }
+        });
+
+        const newCards = this.data.cards.slice();
+        toRemove.forEach(card => {
+          const c = newCards.find(c => c.id === card.id);
+          if (c) {
+            c.status = 2;
+          }
+        });
+
+        this.setData({
+          cards: checkCover(newCards),
+          slots: arrangeSlots(newSlots),
+          score: this.data.score + 10,
+        });
+
+        const remaining = newCards.filter(c => c.status === 0).length;
+        if (remaining === 0) {
+          this.checkWin();
+        }
+      }
+    });
+
+    this.checkSlotsFull();
+  },
+
+  checkSlotsFull() {
+    const filledCount = this.data.slots.filter(s => s !== null).length;
+    if (filledCount >= MAX_SLOTS) {
+      clearInterval(this.data.timer);
+      playSound('lose');
+      this.saveCurrentProgress();
+      this.setData({ showFailModal: true, gameOverState: true });
+    }
+  },
+
+  checkWin() {
+    clearInterval(this.data.timer);
+    playSound('win');
+    this.setData({ showWinModal: true, gameOverState: true });
+  },
+
   nextLevel() {
-    this.setData({ level: this.data.level + 1, time: 0 });
+    playSound('click');
+    this.setData({
+      level: this.data.level + 1,
+      score: 0,
+      showWinModal: false,
+      gameOverState: false,
+    });
     this.initGame();
   },
 
-  /** 跳转到个人中心 */
+  restartGame() {
+    playSound('click');
+    this.setData({
+      score: 0,
+      showFailModal: false,
+      gameOverState: false,
+    });
+    this.initGame();
+  },
+
+  backToLevels() {
+    playSound('click');
+    clearInterval(this.data.timer);
+    tt.navigateBack();
+  },
+
+  // ========== 道具系统 ==========
+
+  useUndoOrAd() {
+    if (this.data.animating || this.data.gameOverState) return;
+    if (this.data.undoCount > 0) {
+      this.openUndoPanel();
+    } else {
+      tt.showToast({ title: '点击下方看广告获取', icon: 'none' });
+    }
+  },
+
+  async watchAdForUndo() {
+    playSound('click');
+    const result = await showRewardedAd((isCompleted) => {
+      if (isCompleted) {
+        this.setData({ undoCount: this.data.undoCount + 1 });
+        playSound('reward');
+        tt.showToast({ title: '获得回退道具!', icon: 'success' });
+      }
+    });
+    if (!result) tt.showToast({ title: '广告加载失败', icon: 'none' });
+  },
+
+  openUndoPanel() {
+    const undoCandidates = this.data.slots
+      .filter(s => s !== null)
+      .map(s => ({
+        id: s.id,
+        icon: s.icon,
+        iconName: this.getIconName(s.icon),
+      }));
+
+    this.setData({ showUndoPanel: true, undoCandidates });
+  },
+
+  closeUndoPanel() {
+    this.setData({ showUndoPanel: false, undoCandidates: [] });
+  },
+
+  selectUndoItem(e) {
+    playSound('item');
+
+    const index = e.currentTarget.dataset.index;
+    const item = this.data.undoCandidates[index];
+    if (!item) return;
+
+    const slots = this.data.slots.slice();
+    const slotIndex = slots.findIndex(s => s && s.id === item.id);
+    if (slotIndex === -1) return;
+
+    slots[slotIndex] = null;
+
+    const cards = this.data.cards.slice();
+    const card = cards.find(c => c.id === item.id);
+    if (card) {
+      card.status = 0;
+      card.isCover = false;
+    }
+
+    this.setData({
+      cards: checkCover(cards),
+      slots: arrangeSlots(slots),
+      undoCount: this.data.undoCount - 1,
+      showUndoPanel: false,
+      undoCandidates: [],
+    });
+
+    tt.showToast({ title: '已取回方块', icon: 'success' });
+  },
+
+  useFindOrAd() {
+    if (this.data.animating || this.data.gameOverState) return;
+    if (this.data.findCount > 0) {
+      this.openFindPanel();
+    } else {
+      tt.showToast({ title: '点击下方看广告获取', icon: 'none' });
+    }
+  },
+
+  async watchAdForFind() {
+    playSound('click');
+    const result = await showRewardedAd((isCompleted) => {
+      if (isCompleted) {
+        this.setData({ findCount: this.data.findCount + 1 });
+        playSound('reward');
+        tt.showToast({ title: '获得寻找道具!', icon: 'success' });
+      }
+    });
+    if (!result) tt.showToast({ title: '广告加载失败', icon: 'none' });
+  },
+
+  openFindPanel() {
+    const slotStats = {};
+    this.data.slots.forEach(s => {
+      if (s) {
+        slotStats[s.icon] = (slotStats[s.icon] || 0) + 1;
+      }
+    });
+
+    const clickableStats = {};
+    this.data.cards.forEach(c => {
+      if (c.status === 0 && !c.isCover) {
+        clickableStats[c.icon] = (clickableStats[c.icon] || 0) + 1;
+      }
+    });
+
+    const icons = new Set([...Object.keys(slotStats), ...Object.keys(clickableStats)]);
+    const findCandidates = Array.from(icons).map(icon => ({
+      icon,
+      iconName: this.getIconName(icon),
+      slotCount: slotStats[icon] || 0,
+      clickableCount: clickableStats[icon] || 0,
+      canEliminate: (slotStats[icon] || 0) + (clickableStats[icon] || 0) >= 3,
+    }));
+
+    this.setData({ showFindPanel: true, findCandidates });
+  },
+
+  closeFindPanel() {
+    this.setData({ showFindPanel: false, findCandidates: [], hintCardId: null });
+  },
+
+  selectFindItem(e) {
+    playSound('item');
+
+    const index = e.currentTarget.dataset.index;
+    const item = this.data.findCandidates[index];
+    if (!item) return;
+
+    const clickableCards = this.data.cards.filter(c => 
+      c.status === 0 && !c.isCover && c.icon === item.icon
+    );
+
+    if (clickableCards.length > 0) {
+      this.setData({
+        hintCardId: clickableCards[0].id,
+        findCount: this.data.findCount - 1,
+        showFindPanel: false,
+        findCandidates: [],
+      });
+
+      setTimeout(() => {
+        this.setData({ hintCardId: null });
+      }, 3000);
+
+      tt.showToast({ title: '已高亮' + item.iconName, icon: 'none' });
+    }
+  },
+
+  useBombOrAd() {
+    if (this.data.animating || this.data.gameOverState) return;
+    if (this.data.bombCount > 0) {
+      this.openBombPanel();
+    } else {
+      tt.showToast({ title: '点击下方看广告获取', icon: 'none' });
+    }
+  },
+
+  async watchAdForBomb() {
+    playSound('click');
+    const result = await showRewardedAd((isCompleted) => {
+      if (isCompleted) {
+        this.setData({ bombCount: this.data.bombCount + 1 });
+        playSound('reward');
+        tt.showToast({ title: '获得炸弹道具!', icon: 'success' });
+      }
+    });
+    if (!result) tt.showToast({ title: '广告加载失败', icon: 'none' });
+  },
+
+  openBombPanel() {
+    const bombCandidates = this.data.cards
+      .filter(c => c.status === 0 && !c.isCover)
+      .map(c => ({
+        id: c.id,
+        icon: c.icon,
+        iconName: this.getIconName(c.icon),
+      }));
+
+    this.setData({ showBombPanel: true, bombCandidates });
+  },
+
+  closeBombPanel() {
+    this.setData({ showBombPanel: false, bombCandidates: [] });
+  },
+
+  selectBombItem(e) {
+    playSound('bomb');
+
+    const index = e.currentTarget.dataset.index;
+    const item = this.data.bombCandidates[index];
+    if (!item) return;
+
+    const cards = this.data.cards.slice();
+    const card = cards.find(c => c.id === item.id);
+    if (card) {
+      card.status = 2;
+    }
+
+    this.setData({
+      cards: checkCover(cards),
+      bombCount: this.data.bombCount - 1,
+      showBombPanel: false,
+      bombCandidates: [],
+      score: this.data.score + 5,
+    });
+
+    const remaining = cards.filter(c => c.status === 0).length;
+    if (remaining === 0) {
+      this.checkWin();
+    }
+
+    tt.showToast({ title: '已炸掉' + item.iconName, icon: 'success' });
+  },
+
+  closeAllPanels() {
+    this.setData({
+      showUndoPanel: false,
+      showFindPanel: false,
+      showBombPanel: false,
+      undoCandidates: [],
+      findCandidates: [],
+      bombCandidates: [],
+    });
+  },
+
+  getIconName(icon) {
+    const names = {
+      'Bamboo_1': '一条', 'Bamboo_2': '二条', 'Bamboo_3': '三条',
+      'Bamboo_4': '四条', 'Bamboo_5': '五条', 'Bamboo_6': '六条',
+      'Bamboo_7': '七条', 'Bamboo_8': '八条', 'Bamboo_9': '九条',
+      'Char_1': '一万', 'Char_2': '两万', 'Char_3': '三万',
+      'Char_4': '四万', 'Char_5': '五万', 'Char_6': '六万',
+      'Char_7': '七万', 'Char_8': '八万', 'Char_9': '九万',
+      'Wheel_1': '一筒', 'Wheel_2': '两筒', 'Wheel_3': '三筒',
+      'Wheel_4': '四筒', 'Wheel_5': '五筒', 'Wheel_6': '六筒',
+      'Wheel_7': '七筒', 'Wheel_8': '八筒', 'Wheel_9': '九筒',
+      'Wind_East': '东', 'Wind_South': '南', 'Wind_West': '西', 'Wind_North': '北',
+      'Dragon_Red': '红中', 'Dragon_Green': '发财', 'Dragon_White': '白板',
+    };
+    return names[icon] || icon;
+  },
+
   goToProfile() {
     tt.navigateTo({ url: '/pages/profile/profile' });
   },
 
-  /** 跳转到排行榜 */
   goToRank() {
     tt.navigateTo({ url: '/pages/rank/rank' });
-  },
-
-  /** 跳转到提现页面 */
-  goToWithdraw() {
-    tt.navigateTo({ url: '/pages/withdraw/withdraw' });
-  },
-
-  /** 跳转到邀请页面 */
-  goToInvite() {
-    tt.navigateTo({ url: '/pages/invite/invite' });
-  },
-
-  /**
-   * 尝试绑定邀请人
-   * 用户通过邀请链接进入时，等待登录完成后自动绑定
-   */
-  async tryBindInviter() {
-    const inviterId = this._pendingInviterId;
-    if (!inviterId) return;
-
-    const app = getApp();
-    const userId = app.globalData.userId;
-
-    this._bindRetryCount = (this._bindRetryCount || 0) + 1;
-    if (this._bindRetryCount > 10) {
-      console.warn('绑定邀请人超时，放弃重试');
-      this._pendingInviterId = null;
-      this._bindRetryCount = 0;
-      return;
-    }
-
-    if (!userId) {
-      setTimeout(() => this.tryBindInviter(), 500);
-      return;
-    }
-
-    if (inviterId === userId) {
-      console.warn('不可自我邀请');
-      this._pendingInviterId = null;
-      this._bindRetryCount = 0;
-      return;
-    }
-
-    try {
-      await userApi.bindInviter(userId, inviterId);
-      console.log('邀请人绑定成功');
-      tt.showToast({ title: '邀请码已绑定', icon: 'success' });
-    } catch (error) {
-      console.warn('绑定邀请人失败:', error.message);
-    }
-
-    this._pendingInviterId = null;
-    this._bindRetryCount = 0;
-  },
-
-  /**
-   * 点击侧边栏礼包入口
-   * 显示引导弹窗
-   */
-  onSidebarGiftTap() {
-    const app = getApp();
-    if (app.globalData.fromSidebar) {
-      this.setData({ sidebarTaskDone: true });
-    }
-    this.setData({ showSidebarModal: true });
-  },
-
-  /**
-   * 关闭侧边栏引导弹窗
-   */
-  closeSidebarModal() {
-    this.setData({ showSidebarModal: false });
-  },
-
-  /**
-   * 跳转到首页侧边栏
-   * 调用 tt.navigateToScene 自动跳转
-   */
-  async goToSidebar() {
-    const app = getApp();
-    await app.navigateToSidebar();
-  },
-
-  /**
-   * 领取侧边栏复访奖励
-   * 从侧边栏返回后点击领取，奖励为+3提示次数
-   */
-  claimSidebarReward() {
-    const app = getApp();
-
-    if (!app.globalData.fromSidebar) {
-      tt.showToast({ title: '请先从侧边栏进入游戏', icon: 'none' });
-      return;
-    }
-
-    if (app.globalData.sidebarRewardClaimed) {
-      tt.showToast({ title: '今日已领取', icon: 'none' });
-      return;
-    }
-
-    this.setData({
-      hintCount: this.data.hintCount + 3,
-      sidebarTaskDone: true,
-      showSidebarModal: false,
-    });
-
-    app.globalData.sidebarRewardClaimed = true;
-
-    tt.showToast({ title: '领取成功！提示+3', icon: 'success' });
   },
 });

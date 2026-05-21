@@ -351,6 +351,54 @@ exports.getLevelConfig = async (event) => {
 };
 
 /**
+ * 获取所有关卡配置列表
+ * @param {Object} event - 云函数调用参数
+ */
+exports.getLevelList = async (event) => {
+  try {
+    log.start('getLevelList', '获取关卡列表请求');
+
+    // 生成关卡列表配置（可扩展为从数据库读取）
+    const maxLevel = 10;
+    const levels = [];
+
+    for (let i = 1; i <= maxLevel; i++) {
+      levels.push({
+        id: i,
+        name: getLevelName(i),
+        difficulty: i,
+        iconCount: Math.min(8 + Math.floor(i / 2), 27),
+        layers: i <= 2 ? 3 : i <= 5 ? 4 : 5,
+      });
+    }
+
+    log.success('getLevelList', '获取关卡列表成功', { count: levels.length });
+    return {
+      code: 0,
+      message: '获取成功',
+      data: { levels, maxLevel },
+    };
+  } catch (error) {
+    log.fail('getLevelList', '获取关卡列表失败', { error: error.message });
+    return {
+      code: -1,
+      message: '获取失败',
+      error: error.message,
+    };
+  }
+};
+
+/**
+ * 根据关卡获取名称
+ * @param {number} level - 关卡
+ * @returns {string} 关卡名称
+ */
+function getLevelName(level) {
+  const names = ['入门', '简单', '普通', '困难', '挑战', '精英', '大师', '王者', '传说', '神话'];
+  return names[Math.min(level - 1, names.length - 1)] || `关卡${level}`;
+}
+
+/**
  * 验证用户身份
  * 确保请求来自有效用户
  * @param {string} userId - 用户ID
@@ -397,6 +445,7 @@ exports.main = async (event) => {
     getUserRecords: exports.getUserRecords,
     getRank: exports.getRank,
     getLevelConfig: exports.getLevelConfig,
+    getLevelList: exports.getLevelList,
   };
 
   if (!action || !actions[action]) {

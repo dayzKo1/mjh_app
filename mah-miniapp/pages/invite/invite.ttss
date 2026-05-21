@@ -151,9 +151,11 @@
   margin-bottom: 12rpx;
 }
 
-.rules-icon {
-  font-size: 28rpx;
+.rules-icon-img {
+  width: 36rpx;
+  height: 36rpx;
   margin-right: 12rpx;
+  flex-shrink: 0;
 }
 
 .rules-text {

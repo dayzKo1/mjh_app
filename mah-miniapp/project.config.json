@@ -8,6 +8,7 @@
         "minified": true,
         "newFeature": true
     },
+    "deviceOrientation": "landscape",
     "appid": "tt12ec64518c8bd5db02",
     "condition": {}
 }

@@ -1,0 +1,70 @@
+<!-- 关卡选择页面 -->
+<view class="container">
+  <!-- 顶部状态栏 -->
+  <view class="header">
+    <text class="title">麻将消消乐</text>
+  </view>
+
+  <!-- 关卡网格 -->
+  <view class="levels-container">
+    <view class="levels-grid">
+      <view
+        tt:for="{{levels}}"
+        tt:key="id"
+        class="level-item {{item.isUnlocked ? 'unlocked' : 'locked'}}"
+        data-id="{{item.id}}"
+        bindtap="onLevelTap"
+      >
+        <!-- 关卡编号 -->
+        <view class="level-number" style="background: {{item.isUnlocked ? '#f7e358' : '#888'}}">
+          <text class="level-num-text">{{item.id}}</text>
+        </view>
+
+        <!-- 关卡信息 -->
+        <view class="level-info">
+          <text class="level-name">{{item.name}}</text>
+          
+          <!-- 星级评价 -->
+          <view class="level-stars" tt:if="{{item.isCompleted}}">
+            <text class="star {{item.stars >= 1 ? 'star-filled' : ''}}">*</text>
+            <text class="star {{item.stars >= 2 ? 'star-filled' : ''}}">*</text>
+            <text class="star {{item.stars >= 3 ? 'star-filled' : ''}}">*</text>
+          </view>
+
+          <!-- 最高分 -->
+          <text class="level-score" tt:if="{{item.isCompleted}}">最高: {{item.bestScore}}分</text>
+
+          <!-- 锁定提示 -->
+          <text class="level-locked-info" tt:if="{{!item.isUnlocked}}">
+            通关第{{item.id - 1}}关解锁
+          </text>
+        </view>
+
+        <!-- 锁定图标 -->
+        <view class="lock-icon" tt:if="{{!item.isUnlocked}}">
+          <text class="lock-text">锁</text>
+        </view>
+
+        <!-- 已通关标记 -->
+        <view class="completed-mark" tt:if="{{item.isCompleted}}">
+          <text class="completed-text">通关</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 底部导航 -->
+  <view class="footer">
+    <view class="nav-btn" bindtap="goToProfile">
+      <text class="nav-btn-text">个人中心</text>
+    </view>
+    <view class="nav-btn" bindtap="goToRank">
+      <text class="nav-btn-text">排行榜</text>
+    </view>
+  </view>
+
+  <!-- 加载提示 -->
+  <view class="loading-mask" tt:if="{{loading}}">
+    <text class="loading-text">加载中...</text>
+  </view>
+</view>

@@ -1,0 +1,172 @@
+/* 开屏加载页面样式 */
+
+.loading-container {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  overflow: hidden;
+}
+
+/* 背景 */
+.bg-image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.15;
+  z-index: 0;
+}
+
+/* Logo区域 */
+.logo-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 120rpx;
+  z-index: 1;
+}
+
+.logo-icon {
+  width: 180rpx;
+  height: 180rpx;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #f7e358, #d4a329);
+  box-shadow: 
+    0 12rpx 40rpx rgba(247, 227, 88, 0.3),
+    0 6rpx 20rpx rgba(0, 0, 0, 0.2),
+    inset 0 -4rpx 8rpx rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: logoFloat 3s ease-in-out infinite;
+}
+
+.logo-img {
+  width: 120rpx;
+  height: 120rpx;
+}
+
+.logo-title {
+  font-size: 48rpx;
+  font-weight: 700;
+  color: #f7e358;
+  margin-top: 24rpx;
+  letter-spacing: 4rpx;
+  text-shadow: 0 4rpx 12rpx rgba(247, 227, 88, 0.4);
+}
+
+.logo-subtitle {
+  font-size: 24rpx;
+  color: rgba(255, 255, 255, 0.6);
+  margin-top: 8rpx;
+}
+
+@keyframes logoFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10rpx); }
+}
+
+/* 进度区域 */
+.progress-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 180rpx;
+  z-index: 1;
+}
+
+.progress-bar-container {
+  display: flex;
+  align-items: center;
+  width: 400rpx;
+  gap: 16rpx;
+}
+
+.progress-bar-bg {
+  flex: 1;
+  height: 12rpx;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 6rpx;
+  overflow: hidden;
+  box-shadow: inset 0 2rpx 4rpx rgba(0, 0, 0, 0.2);
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4CAF50, #8BC34A);
+  border-radius: 6rpx;
+  transition: width 0.3s ease;
+  box-shadow: 0 0 8rpx rgba(76, 175, 80, 0.5);
+}
+
+.progress-text {
+  font-size: 20rpx;
+  color: rgba(255, 255, 255, 0.8);
+  min-width: 50rpx;
+  text-align: right;
+}
+
+.loading-text {
+  font-size: 24rpx;
+  color: rgba(255, 255, 255, 0.5);
+  margin-top: 16rpx;
+}
+
+/* 提示区域 */
+.tips-area {
+  position: absolute;
+  bottom: 240rpx;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  z-index: 1;
+}
+
+.tip-bubble {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  padding: 16rpx 24rpx;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 20rpx;
+  backdrop-filter: blur(10px);
+}
+
+.tip-icon {
+  font-size: 18rpx;
+  color: #f7e358;
+  font-weight: 600;
+  padding: 4rpx 8rpx;
+  background: rgba(247, 227, 88, 0.2);
+  border-radius: 8rpx;
+}
+
+.tip-content {
+  font-size: 22rpx;
+  color: rgba(255, 255, 255, 0.8);
+  animation: tipFadeIn 0.5s ease;
+}
+
+@keyframes tipFadeIn {
+  from { opacity: 0; transform: translateY(10rpx); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* 底部 */
+.footer {
+  position: absolute;
+  bottom: 40rpx;
+  z-index: 1;
+}
+
+.footer-text {
+  font-size: 18rpx;
+  color: rgba(255, 255, 255, 0.3);
+}

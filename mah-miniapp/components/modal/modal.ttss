@@ -1,0 +1,204 @@
+/* 通用弹窗组件样式 - 现代无边界设计 */
+
+/* 遮罩层 */
+.modal-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.modal-mask.show {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* 弹窗容器 */
+.modal-container {
+  position: relative;
+  width: 560rpx;
+  max-width: 90vw;
+  background: linear-gradient(145deg, #2a2a4a, #1a1a2e);
+  border-radius: 24rpx;
+  box-shadow: 
+    0 20rpx 60rpx rgba(0, 0, 0, 0.4),
+    0 8rpx 24rpx rgba(0, 0, 0, 0.2),
+    inset 0 1rpx 0 rgba(255, 255, 255, 0.1);
+  transform: scale(0.9) translateY(20rpx);
+  opacity: 0;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.modal-mask.show .modal-container {
+  transform: scale(1) translateY(0);
+  opacity: 1;
+}
+
+/* 成功类型 */
+.modal-container.success {
+  background: linear-gradient(145deg, #2a4a3a, #1a3a2e);
+}
+
+.modal-container.success .modal-title {
+  color: #4CAF50;
+}
+
+/* 错误类型 */
+.modal-container.error {
+  background: linear-gradient(145deg, #4a2a3a, #3a1a2e);
+}
+
+.modal-container.error .modal-title {
+  color: #F44336;
+}
+
+/* 警告类型 */
+.modal-container.warning {
+  background: linear-gradient(145deg, #4a3a2a, #3a2a1e);
+}
+
+.modal-container.warning .modal-title {
+  color: #FF9800;
+}
+
+/* 关闭按钮 */
+.modal-close {
+  position: absolute;
+  top: 16rpx;
+  right: 16rpx;
+  width: 48rpx;
+  height: 48rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  transition: background 0.2s ease;
+}
+
+.modal-close:active {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.close-icon {
+  font-size: 24rpx;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* 标题 */
+.modal-header {
+  padding: 24rpx 24rpx 16rpx;
+  text-align: center;
+}
+
+.modal-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #f7e358;
+}
+
+/* 内容区域 */
+.modal-content {
+  padding: 16rpx 24rpx;
+  overflow-y: auto;
+}
+
+/* 底部按钮 */
+.modal-footer {
+  display: flex;
+  gap: 12rpx;
+  padding: 16rpx 24rpx 24rpx;
+  position: sticky;
+  bottom: 0;
+  background: inherit;
+}
+
+.modal-btn {
+  flex: 1;
+  height: 72rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16rpx;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.modal-btn:active {
+  transform: scale(0.95);
+}
+
+.modal-btn.confirm {
+  background: linear-gradient(145deg, #f7e358, #d4a329);
+  box-shadow: 0 4rpx 12rpx rgba(247, 227, 88, 0.3);
+}
+
+.modal-btn.confirm .btn-text {
+  color: #1a1a2e;
+  font-weight: 600;
+}
+
+.modal-btn.cancel {
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.2);
+}
+
+.modal-btn.cancel .btn-text {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.btn-text {
+  font-size: 28rpx;
+}
+
+/* 道具选择类型 - 列表样式 */
+.modal-container.item-select .modal-content {
+  padding: 8rpx 0;
+}
+
+/* 道具选择列表项 */
+.item-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.item-row {
+  display: flex;
+  align-items: center;
+  padding: 16rpx 24rpx;
+  gap: 16rpx;
+  background: rgba(255, 255, 255, 0.05);
+  margin-bottom: 8rpx;
+  border-radius: 12rpx;
+  transition: background 0.2s ease;
+}
+
+.item-row:active {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.item-icon {
+  width: 48rpx;
+  height: 48rpx;
+  border-radius: 8rpx;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.item-name {
+  font-size: 28rpx;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.item-count {
+  font-size: 24rpx;
+  color: rgba(255, 255, 255, 0.6);
+  margin-left: auto;
+}

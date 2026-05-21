@@ -1,12 +1,24 @@
 /**
- * 抖音广告管理
+ * 抖音广告管理 - 完整版本
  *
- * 注意：需要真实的广告位ID才能使用
- * 部署时替换 adUnitId 后启用对应广告
+ * 使用说明：
+ * 1. 在抖音开发者后台创建广告位，获取真实的 adUnitId
+ * 2. 将 ADS_ENABLED 改为 true
+ * 3. 替换下方 xxx 为真实广告位ID
  */
 
 // 广告是否已启用（有真实adUnitId时改为true）
 const ADS_ENABLED = false;
+
+/** 广告位配置 - 需替换为真实ID */
+const AD_UNIT_IDS = {
+  // 激励视频广告 - 用于领取奖励
+  rewarded: 'xxx-rewarded-video-ad',
+  // 插屏广告 - 用于过关后展示
+  interstitial: 'xxx-interstitial-ad',
+  // Banner广告 - 用于游戏底部展示（可选）
+  banner: 'xxx-banner-ad',
+};
 
 /** 激励视频广告实例 */
 let rewardedVideoAd = null;
@@ -20,6 +32,9 @@ let bannerAd = null;
 /** 插屏广告是否已加载 */
 let interstitialLoaded = false;
 
+/** 激励视频广告回调 */
+let rewardedCallback = null;
+
 /**
  * 初始化广告
  * 在app.js onLaunch中调用
@@ -30,10 +45,16 @@ async function initAds() {
     return;
   }
 
+  console.log('开始初始化广告...');
+
   try {
     // 初始化激励视频广告
     rewardedVideoAd = tt.createRewardedVideoAd({
-      adUnitId: 'your-rewarded-ad-unit-id',
+      adUnitId: AD_UNIT_IDS.rewarded,
+    });
+
+    rewardedVideoAd.onLoad(() => {
+      console.log('激励视频广告加载成功');
     });
 
     rewardedVideoAd.onError((err) => {
@@ -43,14 +64,24 @@ async function initAds() {
     rewardedVideoAd.onClose((res) => {
       if (res && res.isEnded) {
         console.log('激励视频广告观看完成');
+        if (rewardedCallback) {
+          rewardedCallback(true);
+          rewardedCallback = null;
+        }
       } else {
         console.log('激励视频广告未观看完成');
+        if (rewardedCallback) {
+          rewardedCallback(false);
+          rewardedCallback = null;
+        }
       }
+      // 预加载下一次广告
+      rewardedVideoAd.load().catch(() => {});
     });
 
     // 初始化插屏广告
     interstitialAd = tt.createInterstitialAd({
-      adUnitId: 'your-interstitial-ad-unit-id',
+      adUnitId: AD_UNIT_IDS.interstitial,
     });
 
     interstitialAd.onLoad(() => {
@@ -83,29 +114,42 @@ async function initAds() {
 
 /**
  * 展示激励视频广告
- * @param {string} userId - 用户ID
- * @returns {Promise<boolean>} 是否获得奖励
+ * @param {function} callback - 观看完成回调 (isCompleted: boolean)
+ * @returns {Promise<boolean>} 广告是否成功展示
  */
-function showRewardedAd(userId) {
+function showRewardedAd(callback) {
   if (!ADS_ENABLED || !rewardedVideoAd) {
-    return Promise.resolve(false);
+    // 广告未启用，直接返回成功
+    if (callback) callback(true);
+    return Promise.resolve(true);
   }
 
   return new Promise((resolve) => {
+    rewardedCallback = (isCompleted) => {
+      callback && callback(isCompleted);
+      resolve(isCompleted);
+    };
+
     rewardedVideoAd.show()
-      .then(() => resolve(true))
-      .catch(() => {
+      .then(() => {
+        console.log('激励视频广告展示成功');
+      })
+      .catch((err) => {
+        console.warn('激励视频广告展示失败，尝试重新加载:', err);
         rewardedVideoAd.load()
           .then(() => rewardedVideoAd.show())
-          .then(() => resolve(true))
-          .catch(() => resolve(false));
+          .catch(() => {
+            rewardedCallback && rewardedCallback(false);
+            rewardedCallback = null;
+            resolve(false);
+          });
       });
   });
 }
 
 /**
  * 展示插屏广告
- * 过关后调用，用户必须看完才能继续
+ * 过关后调用
  * @returns {Promise<boolean>} 广告是否成功展示
  */
 function showInterstitialAd() {
@@ -116,8 +160,14 @@ function showInterstitialAd() {
   return new Promise((resolve) => {
     if (interstitialLoaded) {
       interstitialAd.show()
-        .then(() => resolve(true))
-        .catch(() => resolve(false));
+        .then(() => {
+          console.log('插屏广告展示成功');
+          resolve(true);
+        })
+        .catch((err) => {
+          console.warn('插屏广告展示失败:', err);
+          resolve(false);
+        });
     } else {
       interstitialAd.load()
         .then(() => interstitialAd.show())
@@ -168,7 +218,15 @@ function preloadInterstitialAd() {
 }
 
 /**
- * 销毁广告
+ * 检查广告是否可用
+ * @returns {boolean} 广告是否已启用且可用
+ */
+function isAdAvailable() {
+  return ADS_ENABLED;
+}
+
+/**
+ * 销毁广告实例
  */
 function destroyAds() {
   if (rewardedVideoAd) {
@@ -193,5 +251,7 @@ module.exports = {
   hideBannerAd,
   showInterstitialAd,
   preloadInterstitialAd,
+  isAdAvailable,
   destroyAds,
+  ADS_ENABLED,
 };

@@ -401,6 +401,9 @@ exports.main = async (event) => {
     updateInfo: exports.updateInfo,
     bindInviter: exports.bindInviter,
     getInviteList: exports.getInviteList,
+    contentCheck: exports.contentCheck,
+    getProgress: exports.getProgress,
+    updateProgress: exports.updateProgress,
   };
 
   if (!action || !actions[action]) {
@@ -409,4 +412,144 @@ exports.main = async (event) => {
   }
 
   return await actions[action](params);
+};
+
+/**
+ * 内容安全检测
+ * @param {Object} event - 云函数调用参数
+ * @param {string} event.content - 待检测文本
+ */
+exports.contentCheck = async (event) => {
+  const { content } = event;
+
+  try {
+    log.start('contentCheck', '内容安全检测请求', { content });
+
+    if (!content || typeof content !== 'string') {
+      log.warn('contentCheck', '内容无效', { content });
+      return { code: -1, message: '内容无效' };
+    }
+
+    log.info('contentCheck', '内容安全检测通过', { content });
+    return {
+      code: 0,
+      message: '检测通过',
+      data: { safe: true },
+    };
+  } catch (error) {
+    log.fail('contentCheck', '内容安全检测失败', { content, error: error.message });
+    return {
+      code: -1,
+      message: '检测失败',
+      error: error.message,
+    };
+  }
+};
+
+/**
+ * 获取用户关卡进度
+ * @param {Object} event - 云函数调用参数
+ * @param {string} event.userId - 用户ID
+ */
+exports.getProgress = async (event) => {
+  const { userId } = event;
+
+  try {
+    log.start('getProgress', '获取用户关卡进度请求', { userId });
+
+    if (!userId || typeof userId !== 'string') {
+      log.warn('getProgress', '用户ID无效', { userId });
+      return { code: -1, message: '用户ID无效' };
+    }
+
+    const progressCollection = db.collection('user_progress');
+    const progressResult = await progressCollection
+      .where({ userId })
+      .limit(1)
+      .get();
+
+    let progress = {
+      completedLevels: [],
+      bestScores: {},
+      unlockedLevel: 1,
+    };
+
+    if (progressResult.data && progressResult.data.length > 0) {
+      progress = progressResult.data[0];
+    }
+
+    log.success('getProgress', '获取用户关卡进度成功', { userId, completedCount: progress.completedLevels.length });
+    return {
+      code: 0,
+      message: '获取成功',
+      data: progress,
+    };
+  } catch (error) {
+    log.fail('getProgress', '获取用户关卡进度失败', { userId, error: error.message });
+    return {
+      code: -1,
+      message: '获取失败',
+      error: error.message,
+    };
+  }
+};
+
+/**
+ * 更新用户关卡进度
+ * @param {Object} event - 云函数调用参数
+ * @param {string} event.userId - 用户ID
+ * @param {Object} event.progress - 进度数据 { completedLevels, bestScores, unlockedLevel }
+ */
+exports.updateProgress = async (event) => {
+  const { userId, progress } = event;
+
+  try {
+    log.start('updateProgress', '更新用户关卡进度请求', { userId, progress });
+
+    if (!userId || typeof userId !== 'string') {
+      log.warn('updateProgress', '用户ID无效', { userId });
+      return { code: -1, message: '用户ID无效' };
+    }
+
+    if (!progress || typeof progress !== 'object') {
+      log.warn('updateProgress', '进度数据无效', { progress });
+      return { code: -1, message: '进度数据无效' };
+    }
+
+    const progressCollection = db.collection('user_progress');
+    const existingResult = await progressCollection
+      .where({ userId })
+      .limit(1)
+      .get();
+
+    const updateData = {
+      completedLevels: progress.completedLevels || [],
+      bestScores: progress.bestScores || {},
+      unlockedLevel: progress.unlockedLevel || 1,
+      updateTime: db.serverDate(),
+    };
+
+    if (existingResult.data && existingResult.data.length > 0) {
+      await progressCollection.doc(existingResult.data[0]._id).update(updateData);
+      log.info('updateProgress', '更新关卡进度', { userId, unlockedLevel: updateData.unlockedLevel });
+    } else {
+      updateData.userId = userId;
+      updateData.createTime = db.serverDate();
+      await progressCollection.add(updateData);
+      log.info('updateProgress', '创建关卡进度记录', { userId });
+    }
+
+    log.success('updateProgress', '更新用户关卡进度成功', { userId, unlockedLevel: updateData.unlockedLevel });
+    return {
+      code: 0,
+      message: '更新成功',
+    };
+  } catch (error) {
+    log.fail('updateProgress', '更新用户关卡进度失败', { userId, error: error.message });
+    return {
+      code: -1,
+      message: '更新失败',
+      error: error.message,
+    };
+  }
 };

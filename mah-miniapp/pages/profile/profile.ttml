@@ -15,7 +15,7 @@
     <view class="user-info">
       <view class="nickname-row">
         <text class="nickname">{{userInfo.nickName || '未登录'}}</text>
-        <text class="edit-btn" bindtap="onEditNickname">✏️</text>
+        <image class="edit-icon" src="/images/icons/edit_icon.png" mode="aspectFit" bindtap="onEditNickname" />
       </view>
       <view class="user-type-tag {{userType === 'A' ? 'type-a' : 'type-b'}}">
         {{userType === 'A' ? '可提现' : '不可提现'}}
@@ -64,23 +64,23 @@
   <!-- 功能入口 -->
   <view class="feature-grid">
     <view class="feature-item" bindtap="onRank">
-      <view class="feature-icon icon-rank"></view>
+      <image class="feature-icon-img" src="/images/icons/feature_rank.png" mode="aspectFit" />
       <text class="feature-text">排行榜</text>
     </view>
     <view class="feature-item" bindtap="onInvite">
-      <view class="feature-icon icon-invite"></view>
+      <image class="feature-icon-img" src="/images/icons/feature_invite.png" mode="aspectFit" />
       <text class="feature-text">邀请好友</text>
     </view>
     <view class="feature-item" bindtap="onGameRecords">
-      <view class="feature-icon icon-record"></view>
+      <image class="feature-icon-img" src="/images/icons/feature_record.png" mode="aspectFit" />
       <text class="feature-text">游戏记录</text>
     </view>
     <view class="feature-item" bindtap="onAbout">
-      <view class="feature-icon icon-about"></view>
+      <image class="feature-icon-img" src="/images/icons/feature_about.png" mode="aspectFit" />
       <text class="feature-text">关于</text>
     </view>
     <view class="feature-item" bindtap="onContactService">
-      <view class="feature-icon icon-service"></view>
+      <image class="feature-icon-img" src="/images/icons/feature_service.png" mode="aspectFit" />
       <text class="feature-text">客服</text>
     </view>
   </view>

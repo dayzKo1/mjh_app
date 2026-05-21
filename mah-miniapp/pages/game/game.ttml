@@ -1,162 +1,211 @@
-<!-- 游戏页面 - 羊了个羊玩法 -->
+<!-- 游戏页面 - 横屏布局 -->
 <view class="container">
-  <!-- 顶部状态栏：标题 + 信息合并一行 -->
-  <view class="top-bar">
-    <text class="top-bar-title">麻将消消乐</text>
-    <view class="top-bar-stats">
-      <text class="top-stat">第{{level}}关</text>
-      <text class="top-stat-divider">|</text>
-      <text class="top-stat">{{score}}分</text>
-      <text class="top-stat-divider">|</text>
-      <text class="top-stat top-stat-time">{{time}}s</text>
+  <!-- 左侧：游戏区域 -->
+  <view class="left-panel">
+    <!-- 顶部状态栏 -->
+    <view class="top-bar">
+      <text class="top-bar-title">麻将消消乐</text>
+      <view class="top-bar-stats">
+        <text class="top-stat">第{{level}}关</text>
+        <text class="top-stat-divider">|</text>
+        <text class="top-stat">{{score}}分</text>
+      </view>
     </view>
-  </view>
 
-  <!-- 游戏区域 -->
-  <view class="game-area">
-    <view
-      tt:for="{{cards}}"
-      tt:key="id"
-      class="card {{item.isCover ? 'covered' : ''}} {{item.status === 2 ? 'removed' : ''}} {{item.status === 1 ? 'picked' : ''}} {{hintCardId === item.id ? 'hint-highlight' : ''}}"
-      data-index="{{index}}"
-      bindtap="onCardTap"
-      animation="{{cardAnimations[item.id]}}"
-      style="left:{{item.x}}rpx; top:{{item.y}}rpx; z-index:{{10 + item.layer}};"
-    >
-      <image
-        class="card-img"
-        src="/images/{{item.icon}}.png"
-        mode="aspectFit"
-      />
+    <!-- 倒计时进度条 -->
+    <view class="time-bar-container">
+      <view class="time-bar-bg">
+        <view class="time-bar-fill" style="width: {{timeProgress}}%; background: {{timeProgress > 30 ? '#4CAF50' : timeProgress > 15 ? '#FF9800' : '#F44336'}}"></view>
+      </view>
     </view>
-  </view>
 
-  <!-- 暂存槽 -->
-  <view class="slots">
-    <view
-      tt:for="{{slots}}"
-      tt:key="index"
-      class="slot {{item ? 'filled' : ''}}"
-      animation="{{slotAnimations[index]}}"
-    >
-      <image
-        tt:if="{{item}}"
-        class="slot-img"
-        src="/images/{{item.icon}}.png"
-        mode="aspectFit"
-      />
-    </view>
-  </view>
-
-  <!-- 按钮 -->
-  <view class="btns">
-    <view class="btn" bindtap="undo">撤销</view>
-    <view class="btn" bindtap="hint">提示({{hintCount}})</view>
-    <view class="btn" bindtap="shuffle">洗牌</view>
-    <view class="btn" bindtap="restartGame">重玩</view>
-  </view>
-
-  <!-- 看广告获道具 -->
-  <view class="ad-rewards" tt:if="{{gameOverState}}">
-    <view class="ad-reward-btn" bindtap="watchAdForRevive">
-      <text class="ad-reward-icon">🎬</text>
-      <text class="ad-reward-text">看广告复活</text>
-      <image class="ad-video-icon" src="/images/icons/ad_video_icon.png" mode="aspectFit" />
-    </view>
-  </view>
-
-  <!-- 底部导航：纯图标紧凑栏 -->
-  <view class="nav-bar">
-    <view class="nav-item" tt:if="{{showSidebarGift}}" bindtap="onSidebarGiftTap">
-      <view class="nav-icon nav-icon-sidebar">
-        <text class="nav-icon-emoji">🎁</text>
-      </view>
-    </view>
-    <view class="nav-item" bindtap="goToProfile">
-      <view class="nav-icon nav-icon-profile">
-        <image class="nav-icon-img" src="/images/icons/nav_profile.png" mode="aspectFit" />
-      </view>
-    </view>
-    <view class="nav-item" bindtap="goToRank">
-      <view class="nav-icon nav-icon-rank">
-        <image class="nav-icon-img" src="/images/icons/nav_rank.png" mode="aspectFit" />
-      </view>
-    </view>
-    <view class="nav-item" bindtap="goToWithdraw">
-      <view class="nav-icon nav-icon-withdraw">
-        <image class="nav-icon-img" src="/images/icons/nav_withdraw.png" mode="aspectFit" />
-      </view>
-    </view>
-    <view class="nav-item" bindtap="goToInvite">
-      <view class="nav-icon nav-icon-invite">
-        <image class="nav-icon-img" src="/images/icons/nav_invite.png" mode="aspectFit" />
-      </view>
-    </view>
-  </view>
-
-  <!-- 过关广告过渡界面 -->
-  <view class="ad-transition" tt:if="{{showAdTransition}}">
-    <view class="ad-transition-content">
-      <view class="ad-transition-title">🎉 恭喜过关!</view>
-      <view class="ad-transition-stats">
-        <view class="ad-stat-item">
-          <text class="ad-stat-label">得分</text>
-          <text class="ad-stat-value">{{score}}</text>
-        </view>
-        <view class="ad-stat-item">
-          <text class="ad-stat-label">用时</text>
-          <text class="ad-stat-value">{{time}}秒</text>
-        </view>
-        <view class="ad-stat-item">
-          <text class="ad-stat-label">关卡</text>
-          <text class="ad-stat-value">第{{level}}关</text>
-        </view>
-      </view>
-      <view class="ad-transition-divider"></view>
-      <view class="ad-transition-tip" tt:if="{{adCountdown > 0}}">
-        {{adCountdown}}s 后可继续
-      </view>
+    <!-- 游戏区域 -->
+    <view class="game-area">
       <view
-        class="ad-continue-btn {{adCountdown > 0 ? 'disabled' : ''}}"
-        bindtap="continueToNextLevel"
+        tt:for="{{cards}}"
+        tt:key="id"
+        class="card {{item.isCover ? 'covered' : ''}} {{item.status === 2 ? 'removed' : ''}} {{item.status === 1 ? 'picked' : ''}} {{hintCardId === item.id ? 'hint-highlight' : ''}}"
+        data-index="{{index}}"
+        bindtap="onCardTap"
+        style="left:{{item.x}}rpx; top:{{item.y}}rpx; z-index:{{10 + item.layer}};"
       >
-        {{adCountdown > 0 ? '请等待 ' + adCountdown + 's' : '继续闯关 →'}}
+        <image
+          class="card-img"
+          src="/images/{{item.icon}}.png"
+          mode="aspectFit"
+        />
       </view>
     </view>
   </view>
 
-  <!-- 侧边栏复访引导弹窗 -->
-  <view class="sidebar-modal" tt:if="{{showSidebarModal}}">
-    <view class="sidebar-modal-content">
-      <view class="sidebar-modal-close" bindtap="closeSidebarModal">✕</view>
-      <view class="sidebar-modal-title">🎁 侧边栏入口奖励</view>
-      <view class="sidebar-modal-steps">
-        <view class="sidebar-step">
-          <view class="sidebar-step-num">1</view>
-          <text class="sidebar-step-text">点击下方「去首页侧边栏」按钮</text>
+  <!-- 右侧：控件区域 -->
+  <view class="right-panel">
+    <!-- 暂存槽 -->
+    <view class="slots-bar">
+      <view
+        tt:for="{{slots}}"
+        tt:key="index"
+        class="slot {{item ? 'filled' : ''}}"
+        data-index="{{index}}"
+      >
+        <image
+          tt:if="{{item}}"
+          class="slot-img"
+          src="/images/{{item.icon}}.png"
+          mode="aspectFit"
+        />
+      </view>
+    </view>
+
+    <!-- 道具按钮 -->
+    <view class="btns-bar">
+      <view class="btn-item">
+        <view class="btn" bindtap="useUndoOrAd">
+          <text class="btn-text">回退</text>
+          <text class="btn-count">{{undoCount}}</text>
         </view>
-        <view class="sidebar-step">
-          <view class="sidebar-step-num">2</view>
-          <text class="sidebar-step-text">在侧边栏，点击「麻将消消乐」</text>
-        </view>
-        <view class="sidebar-step">
-          <view class="sidebar-step-num">3</view>
-          <text class="sidebar-step-text">返回游戏，领取奖励</text>
+        <view class="btn-ad" tt:if="{{undoCount <= 0}}" bindtap="watchAdForUndo">
+          <text class="btn-ad-text">看广告</text>
         </view>
       </view>
-      <view class="sidebar-modal-reward">奖励：提示次数 +3</view>
-      <view class="sidebar-modal-btns">
-        <view
-          class="sidebar-btn sidebar-btn-go {{sidebarTaskDone ? 'hidden' : ''}}"
-          bindtap="goToSidebar"
-        >
-          去首页侧边栏
+      <view class="btn-item">
+        <view class="btn" bindtap="useFindOrAd">
+          <text class="btn-text">寻找</text>
+          <text class="btn-count">{{findCount}}</text>
         </view>
-        <view
-          class="sidebar-btn sidebar-btn-claim {{sidebarTaskDone ? '' : 'disabled'}}"
-          bindtap="claimSidebarReward"
-        >
-          {{sidebarTaskDone ? '立即领奖' : '未完成'}}
+        <view class="btn-ad" tt:if="{{findCount <= 0}}" bindtap="watchAdForFind">
+          <text class="btn-ad-text">看广告</text>
+        </view>
+      </view>
+      <view class="btn-item">
+        <view class="btn" bindtap="useBombOrAd">
+          <text class="btn-text">炸弹</text>
+          <text class="btn-count">{{bombCount}}</text>
+        </view>
+        <view class="btn-ad" tt:if="{{bombCount <= 0}}" bindtap="watchAdForBomb">
+          <text class="btn-ad-text">看广告</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 导航 -->
+    <view class="nav-bar">
+      <view class="nav-item" bindtap="goToProfile">
+        <text class="nav-text">我的</text>
+      </view>
+      <view class="nav-item" bindtap="goToRank">
+        <text class="nav-text">排行</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 过关弹窗 -->
+  <view class="modal-overlay" tt:if="{{showWinModal}}">
+    <view class="modal-content win-modal">
+      <text class="modal-title">恭喜过关</text>
+      <view class="modal-stats">
+        <view class="stat-item">
+          <text class="stat-label">得分</text>
+          <text class="stat-value">{{score}}</text>
+        </view>
+        <view class="stat-item">
+          <text class="stat-label">关卡</text>
+          <text class="stat-value">第{{level}}关</text>
+        </view>
+      </view>
+      <view class="modal-btns">
+        <view class="modal-btn primary" bindtap="nextLevel">下一关</view>
+        <view class="modal-btn" bindtap="backToLevels">返回关卡</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 倒计时警告弹窗 -->
+  <view class="modal-overlay" tt:if="{{showTimeWarningModal}}">
+    <view class="modal-content warning-modal">
+      <text class="modal-title">时间即将耗尽</text>
+      <text class="modal-desc">看广告可增加30秒时间</text>
+      <view class="modal-btns">
+        <view class="modal-btn primary ad-btn" bindtap="watchAdForTime">
+          <text class="btn-ad-icon">播放</text>
+          <text class="btn-ad-text">看广告 +30s</text>
+        </view>
+        <view class="modal-btn" bindtap="continueWithoutAd">继续游戏</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 游戏失败弹窗 -->
+  <view class="modal-overlay" tt:if="{{showFailModal}}">
+    <view class="modal-content fail-modal">
+      <text class="modal-title">游戏失败</text>
+      <view class="modal-stats">
+        <view class="stat-item">
+          <text class="stat-label">得分</text>
+          <text class="stat-value">{{score}}</text>
+        </view>
+        <view class="stat-item">
+          <text class="stat-label">关卡</text>
+          <text class="stat-value">第{{level}}关</text>
+        </view>
+      </view>
+      <text class="modal-desc">看广告可从当前进度继续</text>
+      <view class="modal-btns">
+        <view class="modal-btn primary ad-btn" bindtap="watchAdToRevive">
+          <text class="btn-ad-icon">播放</text>
+          <text class="btn-ad-text">看广告复活</text>
+        </view>
+        <view class="modal-btn" bindtap="restartGame">重新开始</view>
+        <view class="modal-btn" bindtap="backToLevels">返回关卡</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 道具选择面板 -->
+  <view class="prop-panel" tt:if="{{showUndoPanel || showFindPanel || showBombPanel}}">
+    <view class="prop-panel-mask" bindtap="closeAllPanels"></view>
+    <view class="prop-panel-content">
+      <view class="prop-panel-header">
+        <text class="prop-panel-title">{{showUndoPanel ? '选择要取回的方块' : showFindPanel ? '选择要寻找的类型' : '选择要炸掉的方块'}}</text>
+        <view class="prop-panel-close" bindtap="closeAllPanels">X</view>
+      </view>
+      <view class="prop-panel-body">
+        <view class="prop-items" tt:if="{{showUndoPanel}}">
+          <view
+            tt:for="{{undoCandidates}}"
+            tt:key="id"
+            class="prop-item"
+            data-index="{{index}}"
+            bindtap="selectUndoItem"
+          >
+            <image class="prop-item-img" src="/images/{{item.icon}}.png" mode="aspectFit" />
+            <text class="prop-item-label">{{item.iconName}}</text>
+          </view>
+        </view>
+        <view class="prop-items" tt:if="{{showFindPanel}}">
+          <view
+            tt:for="{{findCandidates}}"
+            tt:key="icon"
+            class="prop-item {{item.canEliminate ? 'highlight' : ''}}"
+            data-index="{{index}}"
+            bindtap="selectFindItem"
+          >
+            <image class="prop-item-img" src="/images/{{item.icon}}.png" mode="aspectFit" />
+            <text class="prop-item-label">{{item.iconName}}</text>
+            <text class="prop-item-count">槽{{item.slotCount}} 场{{item.clickableCount}}</text>
+          </view>
+        </view>
+        <view class="prop-items prop-items-grid" tt:if="{{showBombPanel}}">
+          <view
+            tt:for="{{bombCandidates}}"
+            tt:key="id"
+            class="prop-item"
+            data-index="{{index}}"
+            bindtap="selectBombItem"
+          >
+            <image class="prop-item-img" src="/images/{{item.icon}}.png" mode="aspectFit" />
+            <text class="prop-item-label">{{item.iconName}}</text>
+          </view>
         </view>
       </view>
     </view>

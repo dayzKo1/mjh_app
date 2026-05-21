@@ -1,4 +1,6 @@
 {
   "navigationBarTitleText": "麻将消消乐",
+  "navigationStyle": "default",
+  "pageOrientation": "landscape",
   "usingComponents": {}
 }

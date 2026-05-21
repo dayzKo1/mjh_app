@@ -1,0 +1,29 @@
+<!-- 通用弹窗组件 -->
+<view class="modal-mask {{show ? 'show' : ''}}" bindtap="onBackgroundTap" tt:if="{{show}}">
+  <view class="modal-container {{type}} {{animating ? 'animating' : ''}}" catchtap="stopPropagation">
+    <!-- 关闭按钮 -->
+    <view class="modal-close" tt:if="{{showClose}}" bindtap="onClose">
+      <text class="close-icon">X</text>
+    </view>
+
+    <!-- 标题 -->
+    <view class="modal-header" tt:if="{{title}}">
+      <text class="modal-title">{{title}}</text>
+    </view>
+
+    <!-- 内容区域 -->
+    <view class="modal-content" style="max-height: {{contentHeight}}">
+      <slot name="content" />
+    </view>
+
+    <!-- 底部按钮 -->
+    <view class="modal-footer" tt:if="{{showFooter}}">
+      <view class="modal-btn cancel" tt:if="{{cancelText}}" bindtap="onCancel">
+        <text class="btn-text">{{cancelText}}</text>
+      </view>
+      <view class="modal-btn confirm" bindtap="onConfirm">
+        <text class="btn-text">{{confirmText}}</text>
+      </view>
+    </view>
+  </view>
+</view>

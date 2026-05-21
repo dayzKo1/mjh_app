@@ -115,6 +115,21 @@ const userApi = {
    */
   contentCheck: (content) =>
     callCloudFunction("user", "contentCheck", { content }),
+
+  /**
+   * 获取用户关卡进度
+   * @param {string} userId - 用户ID
+   */
+  getProgress: (userId) =>
+    callCloudFunction("user", "getProgress", { userId }),
+
+  /**
+   * 更新用户关卡进度
+   * @param {string} userId - 用户ID
+   * @param {Object} progress - 进度数据 { completedLevels, bestScores, unlockedLevel }
+   */
+  updateProgress: (userId, progress) =>
+    callCloudFunction("user", "updateProgress", { userId, progress }),
 };
 
 /**
@@ -153,6 +168,12 @@ const gameApi = {
    */
   getLevelConfig: (level) =>
     callCloudFunction("game", "getLevelConfig", { level }),
+
+  /**
+   * 获取所有关卡配置列表
+   */
+  getLevelList: () =>
+    callCloudFunction("game", "getLevelList"),
 };
 
 /**

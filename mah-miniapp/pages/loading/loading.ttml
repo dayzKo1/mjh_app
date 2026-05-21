@@ -1,0 +1,41 @@
+<!-- 开屏加载页面 -->
+<view class="loading-container">
+  <!-- 背景 -->
+  <image class="bg-image" src="/images/loading-bg.png" mode="aspectFill" />
+  
+  <!-- 游戏Logo -->
+  <view class="logo-container">
+    <view class="logo-icon">
+      <image class="logo-img" src="/images/logo.png" mode="aspectFit" />
+    </view>
+    <text class="logo-title">麻将消消乐</text>
+    <text class="logo-subtitle">三消益智游戏</text>
+  </view>
+
+  <!-- 加载进度区域 -->
+  <view class="progress-area">
+    <!-- 进度条 -->
+    <view class="progress-bar-container">
+      <view class="progress-bar-bg">
+        <view class="progress-bar-fill" style="width: {{loadingProgress}}%"></view>
+      </view>
+      <text class="progress-text">{{loadingProgress}}%</text>
+    </view>
+    
+    <!-- 加载文案 -->
+    <text class="loading-text">{{loadingText}}</text>
+  </view>
+
+  <!-- 游戏提示轮播 -->
+  <view class="tips-area" tt:if="{{showTip}}">
+    <view class="tip-bubble">
+      <text class="tip-icon">Tip</text>
+      <text class="tip-content">{{tips[tipIndex]}}</text>
+    </view>
+  </view>
+
+  <!-- 底部版权信息 -->
+  <view class="footer">
+    <text class="footer-text">Powered by Hermes</text>
+  </view>
+</view>
