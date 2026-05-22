@@ -242,7 +242,7 @@ function generateShapePositions(shape, count, centerX, centerY, maxRadius, offse
 // 预加载麻将图片
 function preloadImages() {
   CARD_ICONS.forEach(icon => {
-    const img = tt.createImage();
+    const img = platform.createImage();
     img.src = `images/${icon}.png`;
     cardImages[icon] = img;
   });
@@ -250,7 +250,7 @@ function preloadImages() {
 const SLOT_MAX = 7;
 const MATCH_COUNT = 3;
 
-let gameState = 'branchSelect'; // 启动时进入分支选择（入门/挑战）
+let gameState = 'loading'; // 启动时先显示加载页
 let selectedBranch = null; // 当前选中分支
 let selectedLine = null; // 选中的线路ID
 let currentLevel = 1;
@@ -261,6 +261,12 @@ let unlockedLevels = {
   beginner: { entry: true, a: [2, 3, 8], b: [4, 5, 9], c: [6, 7, 10] }, 
   challenge: { entry: true, a: [102, 103, 108], b: [104, 105, 109], c: [106, 107, 110] } 
 }; // 线路解锁状态（测试：全开）
+
+// 加载进度相关
+let loadProgress = 0; // 0-100
+let dragonX = 0; // 小龙飞行的 X 位置
+let loadComplete = false;
+let dragonImg = null; // 小龙图片
 let score = 0;
 let timeLeft = 120;
 let maxTime = 120;
@@ -328,22 +334,60 @@ function isCardCovered(card) {
   });
 }
 
-/** 初始化 */
+/** 初始化 - 异步加载流程 */
 function init() {
-  preloadImages();
-  initSound();
-  loadUnlockProgress(); // 加载解锁进度
-  if (typeof tt.checkScene === 'function') {
-    tt.checkScene({
+  // 先启动游戏循环，显示加载页面
+  bindTouchEvents();
+  gameLoop();
+  
+  // 开始异步加载
+  asyncLoad();
+}
+
+/** 异步加载资源 */
+async function asyncLoad() {
+  // 加载小龙图片
+  dragonImg = platform.createImage();
+  dragonImg.onload = () => { console.log('小龙图片加载完成'); };
+  dragonImg.onerror = () => { console.log('小龙图片加载失败'); };
+  dragonImg.src = 'images/Dragon_Green.png';
+  
+  // 模拟加载进度
+  const steps = [
+    { progress: 15, action: () => {} },
+    { progress: 30, action: () => preloadImages() },
+    { progress: 50, action: () => initSound() },
+    { progress: 70, action: () => loadUnlockProgress() },
+    { progress: 85, action: () => checkSidebarScene() },
+    { progress: 100, action: () => login() },
+  ];
+  
+  for (const step of steps) {
+    await delay(200);
+    loadProgress = step.progress;
+    step.action();
+  }
+  
+  // 加载完成
+  await delay(300);
+  loadComplete = true;
+  gameState = 'branchSelect';
+}
+
+/** 延迟函数 */
+function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/** 检查侧边栏场景 */
+function checkSidebarScene() {
+  if (typeof platform.checkScene === 'function') {
+    platform.checkScene({
       scene: 'sidebar',
       success: (res) => { showSidebarGift = !!res.isExist; },
       fail: () => {},
     });
   }
-  login();
-  // 不直接开始游戏，等待玩家选择关卡
-  bindTouchEvents();
-  gameLoop();
 }
 
 /** 加载解锁进度 */
@@ -596,15 +640,24 @@ function onCardTap(card) {
 
 /** 更新飞入动画 */
 function updateFlyingCards() {
+  if (flyingCards.length === 0) return;
+  
   const now = Date.now();
+  let hasCompleted = false;
   flyingCards = flyingCards.filter(f => {
     const elapsed = now - f.startTime;
     if (elapsed >= FLY_DURATION) {
+      hasCompleted = true;
       return false; // 动画完成，移除
     }
     f.progress = elapsed / FLY_DURATION;
     return true;
   });
+  
+  // 动画完成后检测消除（仅在游戏进行中）
+  if (hasCompleted && gameState === 'playing') {
+    onFlyComplete();
+  }
 }
 
 /** 绘制飞入动画卡牌 */
@@ -623,7 +676,26 @@ function drawFlyingCards() {
     ctx.scale(scale, scale);
     ctx.translate(-CARD_W / 2, -CARD_H / 2);
     
-    drawCard(f.card, 0, 0, CARD_W, CARD_H);
+    // 绘制卡牌背景
+    const g = ctx.createLinearGradient(0, 0, 0, CARD_H);
+    g.addColorStop(0, '#fffef9');
+    g.addColorStop(1, '#efe0c6');
+    ctx.fillStyle = g;
+    ctx.shadowColor = 'rgba(0,0,0,0.3)';
+    ctx.shadowBlur = 6;
+    ctx.shadowOffsetX = 2;
+    ctx.shadowOffsetY = 3;
+    roundRect(ctx, 0, 0, CARD_W, CARD_H, 6);
+    ctx.fill();
+    ctx.shadowColor = 'transparent';
+    
+    // 绘制麻将图片
+    const img = cardImages[f.card.icon];
+    if (img && img.complete) {
+      const imgW = CARD_W * 0.8;
+      const imgH = CARD_H * 0.8;
+      ctx.drawImage(img, (CARD_W - imgW) / 2, (CARD_H - imgH) / 2, imgW, imgH);
+    }
     
     ctx.restore();
   });
@@ -631,29 +703,36 @@ function drawFlyingCards() {
 
 /** 检测并处理消除（三张相同） */
 function checkMatch() {
+  // 只在游戏进行中检测
+  if (gameState !== 'playing') return;
+  if (slots.length === 0) return;
+  
   for (let i = slots.length - 1; i >= 2; i--) {
     if (slots[i].icon === slots[i - 1].icon && slots[i].icon === slots[i - 2].icon) {
       playSound('match');
       const removed = slots.splice(i - 2, 3);
       removed.forEach(c => c.removed = true);
       score += 30;
-      if (cards.every(c => c.removed)) {
+      // 检查胜利条件：所有卡牌都已移除
+      const remainingCards = cards.filter(c => !c.removed);
+      if (remainingCards.length === 0) {
         gameState = 'win';
         showWinModal = true;
         playSound('win');
         playSound('unlock');
-        clearInterval(timerInterval);
+        if (timerInterval) clearInterval(timerInterval);
         saveRecord();
       }
       return;
     }
   }
   
+  // 暂存槽满且无法消除，游戏失败
   if (slots.length >= SLOT_MAX) {
     gameState = 'fail';
     showFailModal = true;
     playSound('lose');
-    clearInterval(timerInterval);
+    if (timerInterval) clearInterval(timerInterval);
   }
 }
 
@@ -758,21 +837,194 @@ function gameLoop() {
 
 function render() {
   ctx.clearRect(0, 0, W, H);
-  if (gameState === 'branchSelect') {
+  if (gameState === 'loading') {
+    drawLoadingScreen();
+  } else if (gameState === 'branchSelect') {
     drawBranchSelect();
   } else if (gameState === 'levelSelect') {
     drawLevelSelect();
-  } else {
+  } else if (gameState === 'playing') {
+    // 更新飞入动画
+    updateFlyingCards();
     drawBackground();
     drawCards();
+    drawFlyingCards();
     drawSlots();
     drawProps();
     drawInfo();
     if (showSidebarGift) drawSidebarGift();
     if (showSidebarModal) drawSidebarModal();
-    if (showWinModal) drawWinModal();
-    if (showFailModal) drawFailModal();
+  } else if (gameState === 'win') {
+    drawBackground();
+    drawCards();
+    drawSlots();
+    drawProps();
+    drawInfo();
+    drawWinModal();
+  } else if (gameState === 'fail') {
+    drawBackground();
+    drawCards();
+    drawSlots();
+    drawProps();
+    drawInfo();
+    drawFailModal();
+  } else {
+    // 未知状态，回到分支选择
+    console.warn('未知 gameState:', gameState);
+    gameState = 'branchSelect';
+    drawBranchSelect();
   }
+}
+
+/** 绘制加载页面 - logo + 进度条 + 小龙飞过 */
+function drawLoadingScreen() {
+  // 背景
+  ctx.fillStyle = '#1a472a';
+  ctx.fillRect(0, 0, W, H);
+  
+  // Logo - 麻将牌图案
+  const logoSize = H * 0.25;
+  const logoX = W / 2 - logoSize / 2;
+  const logoY = H * 0.25;
+  
+  ctx.fillStyle = '#22c55e';
+  ctx.shadowColor = 'rgba(0,0,0,0.3)';
+  ctx.shadowBlur = 15;
+  roundRect(ctx, logoX, logoY, logoSize, logoSize * 1.3, 12);
+  ctx.fill();
+  ctx.shadowColor = 'transparent';
+  
+  // Logo 内部文字
+  ctx.fillStyle = '#fff';
+  ctx.font = `bold ${Math.floor(logoSize * 0.3)}px sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('雀容', W / 2, logoY + logoSize * 0.4);
+  ctx.fillText('麻将消消乐', W / 2, logoY + logoSize * 0.8);
+  
+  // 进度条背景
+  const barW = W * 0.6;
+  const barH = H * 0.04;
+  const barX = (W - barW) / 2;
+  const barY = H * 0.6;
+  
+  ctx.fillStyle = 'rgba(255,255,255,0.2)';
+  roundRect(ctx, barX, barY, barW, barH, barH / 2);
+  ctx.fill();
+  
+  // 进度条填充
+  const progressW = barW * (loadProgress / 100);
+  if (progressW > 0) {
+    ctx.fillStyle = '#f7e358';
+    roundRect(ctx, barX, barY, progressW, barH, barH / 2);
+    ctx.fill();
+  }
+  
+  // 小龙飞行
+  const dragonSize = H * 0.1;
+  const progressRatio = Math.max(0.05, Math.min(loadProgress / 100, 1));
+  dragonX = barX + barW * progressRatio - dragonSize / 2;
+  const dragonY = barY - dragonSize * 0.6;
+  
+  // 优先使用图片，否则绘制简易小龙
+  if (dragonImg && dragonImg.complete && dragonImg.width > 0) {
+    ctx.drawImage(dragonImg, dragonX, dragonY, dragonSize, dragonSize);
+  } else {
+    drawSimpleDragon(dragonX, dragonY, dragonSize);
+  }
+  
+  // 进度文字
+  ctx.fillStyle = '#fff';
+  ctx.font = `${Math.floor(barH * 0.8)}px sans-serif`;
+  ctx.fillText(`${Math.floor(loadProgress)}%`, W / 2, barY + barH + H * 0.03);
+  
+  // 加载提示
+  ctx.fillStyle = 'rgba(255,255,255,0.6)';
+  ctx.font = `${Math.floor(H * 0.02)}px sans-serif`;
+  const tips = ['加载资源...', '准备游戏数据...', '初始化音效...', '即将开始...'];
+  const tipIndex = Math.floor(loadProgress / 25);
+  ctx.fillText(tips[Math.min(tipIndex, 3)], W / 2, H * 0.75);
+}
+
+/** 绘制简易小龙（图片未加载时的替代） */
+function drawSimpleDragon(x, y, size) {
+  ctx.save();
+  ctx.translate(x + size / 2, y + size / 2);
+  
+  // 身体阴影
+  ctx.fillStyle = 'rgba(0,0,0,0.2)';
+  ctx.beginPath();
+  ctx.ellipse(size * 0.02, size * 0.04, size * 0.38, size * 0.22, 0, 0, Math.PI * 2);
+  ctx.fill();
+  
+  // 尾巴
+  ctx.fillStyle = '#388E3C';
+  ctx.beginPath();
+  ctx.moveTo(-size * 0.35, 0);
+  ctx.quadraticCurveTo(-size * 0.5, size * 0.1, -size * 0.48, size * 0.2);
+  ctx.quadraticCurveTo(-size * 0.42, size * 0.15, -size * 0.35, size * 0.05);
+  ctx.fill();
+  
+  // 身体
+  const bodyGrad = ctx.createRadialGradient(size * 0.1, -size * 0.05, 0, 0, 0, size * 0.4);
+  bodyGrad.addColorStop(0, '#66BB6A');
+  bodyGrad.addColorStop(1, '#388E3C');
+  ctx.fillStyle = bodyGrad;
+  ctx.beginPath();
+  ctx.ellipse(0, 0, size * 0.36, size * 0.22, 0, 0, Math.PI * 2);
+  ctx.fill();
+  
+  // 翅膀
+  ctx.fillStyle = 'rgba(76, 175, 80, 0.7)';
+  ctx.beginPath();
+  ctx.moveTo(-size * 0.05, -size * 0.08);
+  ctx.quadraticCurveTo(-size * 0.15, -size * 0.35, size * 0.05, -size * 0.32);
+  ctx.quadraticCurveTo(0, -size * 0.15, -size * 0.05, -size * 0.08);
+  ctx.fill();
+  
+  // 头
+  const headGrad = ctx.createRadialGradient(size * 0.32, -size * 0.15, 0, size * 0.28, -size * 0.08, size * 0.18);
+  headGrad.addColorStop(0, '#81C784');
+  headGrad.addColorStop(1, '#4CAF50');
+  ctx.fillStyle = headGrad;
+  ctx.beginPath();
+  ctx.arc(size * 0.28, -size * 0.05, size * 0.18, 0, Math.PI * 2);
+  ctx.fill();
+  
+  // 角
+  ctx.fillStyle = '#FFD54F';
+  ctx.beginPath();
+  ctx.moveTo(size * 0.32, -size * 0.22);
+  ctx.lineTo(size * 0.28, -size * 0.12);
+  ctx.lineTo(size * 0.36, -size * 0.15);
+  ctx.closePath();
+  ctx.fill();
+  
+  ctx.beginPath();
+  ctx.moveTo(size * 0.22, -size * 0.2);
+  ctx.lineTo(size * 0.2, -size * 0.1);
+  ctx.lineTo(size * 0.28, -size * 0.13);
+  ctx.closePath();
+  ctx.fill();
+  
+  // 眼睛
+  ctx.fillStyle = '#fff';
+  ctx.beginPath();
+  ctx.ellipse(size * 0.32, -size * 0.08, size * 0.06, size * 0.07, 0, 0, Math.PI * 2);
+  ctx.fill();
+  
+  ctx.fillStyle = '#1a1a1a';
+  ctx.beginPath();
+  ctx.arc(size * 0.33, -size * 0.07, size * 0.035, 0, Math.PI * 2);
+  ctx.fill();
+  
+  // 高光
+  ctx.fillStyle = '#fff';
+  ctx.beginPath();
+  ctx.arc(size * 0.34, -size * 0.09, size * 0.015, 0, Math.PI * 2);
+  ctx.fill();
+  
+  ctx.restore();
 }
 
 /** 绘制关卡选择界面 */
@@ -1090,10 +1342,7 @@ function handleLevelSelectTouch(x, y) {
     const dist = Math.sqrt((x - startX) ** 2 + (y - startY) ** 2);
     if (dist <= entryRadius * 1.5) {
       playSound('click');
-      currentLevel = branch.entry.id;
-      currentLevelConfig = branch.entry;
-      currentLineId = null;
-      startLevel();
+      startLevel(branch.entry.id, selectedBranch, null);
       return;
     }
   }
@@ -1119,11 +1368,7 @@ function handleLevelSelectTouch(x, y) {
         const dist = Math.sqrt((x - nodeX) ** 2 + (y - baseY) ** 2);
         if (dist <= levelRadius * 1.5) {
           playSound('click');
-          selectedLine = line.id;
-          currentLevel = level.id;
-          currentLevelConfig = level;
-          currentLineId = line.id;
-          startLevel();
+          startLevel(level.id, selectedBranch, line.id);
           return;
         }
       }

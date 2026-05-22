@@ -145,20 +145,17 @@ Page({
 
     const lines = branch.lines.map((line) => {
       const levels = line.levels.map((level) => {
-        const isCompleted = completedLevels.includes(level.id);
+        const isCompleted = completedLevels.some(id => parseInt(id) === level.id);
         const bestScore = bestScores[level.id] || 0;
 
-        // 解锁条件：第一关默认解锁，或上一关已通关（同分支内）
         let isUnlocked = false;
         if (level.id === 1 || level.id === 101) {
           isUnlocked = true;
         } else {
-          // 检查同分支内上一关是否通关
           const prevId = level.id <= 8 ? level.id - 1 : level.id - 1;
-          isUnlocked = completedLevels.includes(prevId);
+          isUnlocked = completedLevels.some(id => parseInt(id) === prevId);
         }
 
-        // 计算星级
         let stars = 0;
         if (isCompleted) {
           stars = 1;
@@ -238,22 +235,33 @@ Page({
    * 点击关卡
    */
   onLevelTap(e) {
-    const levelId = e.currentTarget.dataset.id;
+    if (this.data.loading) {
+      tt.showToast({ title: '加载中，请稍候', icon: 'none' });
+      return;
+    }
+
+    const levelId = parseInt(e.currentTarget.dataset.id);
+    
+    if (!levelId || isNaN(levelId)) {
+      tt.showToast({ title: '关卡ID无效', icon: 'none' });
+      return;
+    }
+
     const level = this.data.allLevels.find((l) => l.id === levelId);
 
     if (!level) {
+      console.error('关卡不存在，levelId:', levelId, 'allLevels:', this.data.allLevels.map(l => l.id));
       tt.showToast({ title: '关卡不存在', icon: 'none' });
       return;
     }
 
-    // 检查解锁状态
     const { completedLevels } = this.data;
     let isUnlocked = false;
     if (levelId === 1 || levelId === 101) {
       isUnlocked = true;
     } else {
       const prevId = levelId <= 8 ? levelId - 1 : levelId - 1;
-      isUnlocked = completedLevels.includes(prevId);
+      isUnlocked = completedLevels.some(id => parseInt(id) === prevId);
     }
 
     if (!isUnlocked) {
@@ -261,9 +269,14 @@ Page({
       return;
     }
 
-    // 进入游戏页面，传递关卡参数
+    console.log('进入游戏，关卡:', levelId, 'iconCount:', level.iconCount, 'layers:', level.layers);
+
     tt.navigateTo({
       url: `/pages/game/game?level=${levelId}&iconCount=${level.iconCount}&layers=${level.layers}`,
+      fail: (err) => {
+        console.error('跳转失败:', err);
+        tt.showToast({ title: '跳转失败', icon: 'none' });
+      }
     });
   },
 

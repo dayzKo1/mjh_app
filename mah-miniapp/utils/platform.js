@@ -234,6 +234,15 @@ const platform = {
     return canvas.getContext(type || '2d');
   },
   
+  // ==================== 图片 ====================
+  createImage() {
+    if (nativeAPI) {
+      return nativeAPI.createImage();
+    }
+    // Web 环境 - 使用 HTML Image
+    return new Image();
+  },
+  
   // ==================== 云开发 ====================
   createCloud(options) {
     if (PLATFORM === 'douyin' && nativeAPI.createCloud) {

@@ -42,10 +42,12 @@ function generateId() {
 }
 
 function generateScene(level, customIconCount = null, customLayers = null) {
-  // 支持自定义参数，或根据关卡计算默认值
-  const iconCount = customIconCount || Math.min(6 + Math.floor((level - 1) / 2), MAHJONG_TILES.length);
+  level = parseInt(level) || 1;
+  const iconCount = customIconCount ? parseInt(customIconCount) : Math.min(6 + Math.floor((level - 1) / 2), MAHJONG_TILES.length);
   const selectedIcons = MAHJONG_TILES.slice(0, iconCount);
-  const layers = customLayers || (level <= 2 ? 3 : level <= 5 ? 4 : 5);
+  const layers = customLayers ? parseInt(customLayers) : (level <= 2 ? 3 : level <= 5 ? 4 : 5);
+
+  console.log('generateScene - level:', level, 'iconCount:', iconCount, 'layers:', layers, 'selectedIcons:', selectedIcons.length);
 
   const allCards = [];
   selectedIcons.forEach(icon => {
@@ -203,12 +205,15 @@ Page({
   },
 
   onLoad(options) {
+    console.log('游戏页面加载，参数:', options);
+    
     const level = parseInt(options.level) || 1;
     const iconCount = parseInt(options.iconCount) || null;
     const layers = parseInt(options.layers) || null;
 
-    // 更新关卡名称映射以支持挑战模式关卡
     const levelName = this.getLevelName(level);
+
+    console.log('解析后：level:', level, 'iconCount:', iconCount, 'layers:', layers, 'levelName:', levelName);
 
     this.setData({ 
       level,
@@ -250,10 +255,19 @@ Page({
     const level = this.data.level;
     const iconCount = this.data.customIconCount;
     const layers = this.data.customLayers;
-    const cards = generateScene(level, iconCount, layers);
     const levelName = this.getLevelName(level);
 
-    console.log('关卡', level, levelName, '卡片数', cards.length, 'iconCount', iconCount, 'layers', layers);
+    console.log('初始化游戏 - 关卡:', level, levelName, '卡片数配置:', 'iconCount:', iconCount, 'layers:', layers);
+
+    let cards;
+    try {
+      cards = generateScene(level, iconCount, layers);
+      console.log('生成场景成功，卡片数:', cards.length);
+    } catch (error) {
+      console.error('生成场景失败:', error);
+      tt.showToast({ title: '关卡生成失败', icon: 'none' });
+      return;
+    }
 
     this.setData({
       levelName,
