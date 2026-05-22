@@ -669,12 +669,21 @@ const Game: FC<{
 
     return (
         <>
-            <div className="level">
-                <div className="game-stats">
-                    <div className="stat-item">
-                        <span className="stat-label">关卡</span>
-                        <span className="stat-value">
+            {/* 顶部信息区域 - 四角布局 */}
+            <div className="top-info">
+                {/* 左上角 - 积分 */}
+                <div className="score-display">
+                    <span className="score-label">得分</span>
+                    <span className="score-value">{score}</span>
+                </div>
+                
+                {/* 右上角 - 进度条（关卡进度） */}
+                <div className="progress-display">
+                    <div className="progress-info">
+                        <span className="level-info">
+                            关卡
                             <select
+                                className="level-select"
                                 value={level}
                                 onChange={(e) =>
                                     selectLevel(Number(e.target.value))
@@ -690,67 +699,77 @@ const Game: FC<{
                                 ))}
                             </select>
                         </span>
-                    </div>
-                    <div className="stat-item">
-                        <span className="stat-label">剩余</span>
-                        <span className="stat-value">
-                            {scene.filter((i) => i.status === 0).length}
+                        <span className="remaining-info">
+                            剩余 {scene.filter((i) => i.status === 0).length}
                         </span>
                     </div>
-                    <div className="stat-item">
-                        <span className="stat-label">得分</span>
-                        <span className="stat-value">{score}</span>
+                    <div className="progress-bar-container">
+                        <div 
+                            className="progress-bar"
+                            style={{ 
+                                width: `${Math.min(100, Math.max(0, 
+                                    (1 - scene.filter((i) => i.status === 0).length / (level * 12 * 6)) * 100
+                                ))}%`
+                            }}
+                        />
                     </div>
-                    <div className="stat-item">
-                        <span className="stat-label">用时</span>
-                        <span className="stat-value">
-                            {timestampToUsedTimeString(usedTime)}
-                        </span>
-                    </div>
+                    <span className="progress-label">
+                        用时 {timestampToUsedTimeString(usedTime)}
+                    </span>
                 </div>
             </div>
+            
+            {/* 游戏主区域 */}
             <div className="game" ref={sceneRef}>
-                <div className="scene-container">
-                    <div className="scene-inner">
-                        {scene.map((item, idx) => (
-                            <Symbol
-                                key={item.id}
-                                {...item}
-                                x={
-                                    item.status === 0
-                                        ? item.x
-                                        : item.status === 1
-                                        ? sortedQueue[item.id]
-                                        : -1000
-                                }
-                                y={item.status === 0 ? item.y : queueY}
-                                onClick={() => clickSymbol(idx)}
-                            />
-                        ))}
+                {/* 场景容器 - 麻将牌渲染区域 */}
+                <div className="game-area">
+                    <div className="scene-container">
+                        <div className="scene-inner">
+                            {scene.map((item, idx) => (
+                                <Symbol
+                                    key={item.id}
+                                    {...item}
+                                    x={
+                                        item.status === 0
+                                            ? item.x
+                                            : item.status === 1
+                                            ? sortedQueue[item.id]
+                                            : -1000
+                                    }
+                                    y={item.status === 0 ? item.y : queueY}
+                                    onClick={() => clickSymbol(idx)}
+                                />
+                            ))}
+                        </div>
                     </div>
                 </div>
-                <div className="queue-container" ref={queueRef} />
-                <div className="button-container flex-container flex-between">
-                    <button className="flex-grow" onClick={pop}>
-                        弹出
-                    </button>
-                    <button className="flex-grow" onClick={undo}>
-                        撤销
-                    </button>
-                    <button
-                        className={`flex-grow ${
-                            autoPlay ? 'auto-playing' : ''
-                        }`}
-                        onClick={autoPlay ? stopAutoPlay : startAutoPlay}
-                    >
-                        {autoPlay ? '停止AI' : 'AI自动'}
-                    </button>
-                    <button className="flex-grow" onClick={wash}>
-                        洗牌
-                    </button>
-                    <button className="flex-grow" onClick={levelUp}>
-                        下一关
-                    </button>
+                
+                {/* 底部区域 - 暂存槽(左) + 道具(右) */}
+                <div className="bottom-area">
+                    {/* 左下角 - 暂存槽 */}
+                    <div className="queue-container" ref={queueRef} />
+                    
+                    {/* 右下角 - 道具按钮 */}
+                    <div className="props-container">
+                        <button className="props-button" onClick={pop}>
+                            弹出
+                        </button>
+                        <button className="props-button" onClick={undo}>
+                            撤销
+                        </button>
+                        <button
+                            className={`props-button ${autoPlay ? 'auto-playing' : ''}`}
+                            onClick={autoPlay ? stopAutoPlay : startAutoPlay}
+                        >
+                            {autoPlay ? '停止AI' : 'AI自动'}
+                        </button>
+                        <button className="props-button" onClick={wash}>
+                            洗牌
+                        </button>
+                        <button className="props-button" onClick={levelUp}>
+                            下一关
+                        </button>
+                    </div>
                 </div>
             </div>
             {/*积分、排行榜*/}

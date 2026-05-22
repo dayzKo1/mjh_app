@@ -28,7 +28,16 @@ App({
    * 抖音云通过 tt.createCloud 初始化，无需手动 init
    */
   async onLaunch() {
-    console.log('小程序启动', tt.getLaunchOptionsSync());
+    console.log('小游戏启动');
+
+    try {
+      // 小游戏环境下某些API可能不存在
+      if (typeof tt.getLaunchOptionsSync === 'function') {
+        console.log('启动参数', tt.getLaunchOptionsSync());
+      }
+    } catch (e) {
+      console.warn('获取启动参数失败:', e.message);
+    }
 
     try {
       if (tt.createCloud) {

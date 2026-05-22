@@ -9,10 +9,20 @@
     flex-direction: column;
 }
 
-.scene-container {
+// 主游戏区域 - 占满剩余空间
+.game-area {
     flex: 1 1 auto;
-    min-height: 0;
+    min-height: 200px;
     position: relative;
+}
+
+// 场景容器 - 麻将牌渲染区域
+.scene-container {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
     background: rgba(0, 0, 0, 0.1);
     border-radius: 16px;
     box-shadow: 
@@ -30,6 +40,7 @@
     font-size: 28px;
 }
 
+// 麻将牌样式
 .symbol {
     width: 12.5%;
     // 麻将牌竖长比例 3:4，高度是宽度的 1.33倍
@@ -81,42 +92,165 @@
     }
 }
 
-.queue-container {
-    height: 60px;
+// 底部区域 - 包含暂存槽和道具
+.bottom-area {
     flex-shrink: 0;
-    position: relative;
-    margin-top: 12px;
-
-    &::after {
-        content: '';
-        position: absolute;
-        left: 3.125%;
-        right: 3.125%;
-        top: 0;
-        bottom: 0;
-        border-radius: 16px;
-        background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(168, 85, 247, 0.1) 100%);
-        border: 2px solid rgba(99, 102, 241, 0.2);
-        box-shadow: 
-            0 4px 16px rgba(0, 0, 0, 0.2),
-            inset 0 1px 0 rgba(255, 255, 255, 0.1);
-    }
-}
-
-.button-container {
-    flex-shrink: 0;
+    display: flex;
+    gap: 12px;
     margin-top: 12px;
     padding-bottom: env(safe-area-inset-bottom, 0);
-    margin-bottom: 12px;
+    padding-left: 12px;
+    padding-right: 12px;
+}
+
+// 暂存槽 - 左下角
+.queue-container {
+    flex: 1;
+    min-width: 0;
+    height: 60px;
+    position: relative;
+    border-radius: 16px;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(168, 85, 247, 0.1) 100%);
+    border: 2px solid rgba(99, 102, 241, 0.2);
+    box-shadow: 
+        0 4px 16px rgba(0, 0, 0, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+// 道具区域 - 右下角
+.props-container {
+    flex-shrink: 0;
     display: flex;
     gap: 8px;
     flex-wrap: nowrap;
+    align-items: center;
 }
 
-.flex-grow {
-    flex: 1;
-    min-width: 0;
+.props-button {
+    padding: 10px 14px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(168, 85, 247, 0.2) 100%);
+    border: 2px solid rgba(99, 102, 241, 0.3);
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
     white-space: nowrap;
+    font-size: 0.85em;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    
+    &:hover {
+        transform: translateY(-1px);
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.3) 0%, rgba(168, 85, 247, 0.3) 100%);
+    }
+    
+    &.auto-playing {
+        background: linear-gradient(135deg, rgba(239, 68, 68, 0.3) 0%, rgba(239, 68, 68, 0.2) 100%);
+        border-color: rgba(239, 68, 68, 0.4);
+    }
+}
+
+// 顶部信息区域 - 四角布局
+.top-info {
+    flex-shrink: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    gap: 12px;
+}
+
+// 左上角 - 积分
+.score-display {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    
+    .score-label {
+        font-size: 0.75em;
+        color: rgba(255, 255, 255, 0.6);
+        font-weight: 500;
+    }
+    
+    .score-value {
+        font-size: 1.5em;
+        font-weight: 700;
+        color: rgba(255, 255, 255, 0.95);
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+}
+
+// 右上角 - 进度条（关卡进度）
+.progress-display {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+    
+    .progress-label {
+        font-size: 0.75em;
+        color: rgba(255, 255, 255, 0.6);
+        font-weight: 500;
+    }
+    
+    .progress-bar-container {
+        width: 120px;
+        height: 8px;
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 4px;
+        overflow: hidden;
+        
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #6366f1 0%, #a855f7 100%);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+    }
+    
+    .progress-info {
+        display: flex;
+        gap: 8px;
+        font-size: 0.7em;
+        color: rgba(255, 255, 255, 0.7);
+        
+        .level-info {
+            font-weight: 600;
+        }
+        
+        .remaining-info {
+            color: rgba(255, 255, 255, 0.5);
+        }
+    }
+}
+
+// 关卡选择下拉框
+.level-select {
+    background: linear-gradient(135deg, #5a5a7a 0%, #4a4a6a 100%);
+    color: white;
+    border: 2px solid rgba(99, 102, 241, 0.3);
+    padding: 4px 8px;
+    border-radius: 8px;
+    font-size: 0.9em;
+    cursor: pointer;
+    font-weight: 600;
+    box-shadow: 
+        0 2px 8px rgba(0, 0, 0, 0.3),
+        0 4px 16px rgba(99, 102, 241, 0.2);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    min-width: 50px;
+    
+    &:hover {
+        background: linear-gradient(135deg, #6a6a8a 0%, #5a5a7a 100%);
+        border-color: rgba(99, 102, 241, 0.5);
+        transform: translateY(-1px);
+    }
+    
+    option {
+        background-color: #3a3a5a;
+        color: white;
+    }
 }
 
 .bgm-button {
@@ -131,6 +265,7 @@
     border-radius: 12px;
     backdrop-filter: blur(10px);
     transition: all 0.3s ease;
+    z-index: 100;
     
     &:hover {
         background: rgba(255, 255, 255, 0.15);
@@ -143,123 +278,46 @@
     margin-top: 12px;
 }
 
-.level {
-    font-size: 0.9em;
-    font-weight: 500;
-    padding: 8px 0 6px;
-    color: rgba(255, 255, 255, 0.9);
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    position: relative;
-    z-index: 1;
-    
-    .game-stats {
-        display: flex;
-        justify-content: space-around;
-        align-items: center;
-        gap: 12px;
-        padding: 1px 2px;
-        background: rgba(255, 255, 255, 0.05);
-        border-radius: 10px;
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-        
-        .stat-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 2px;
-            flex: 1;
-            
-            .stat-label {
-                font-size: 0.75em;
-                color: rgba(255, 255, 255, 0.6);
-                font-weight: 500;
-                text-transform: uppercase;
-                letter-spacing: 0.05em;
-            }
-            
-            .stat-value {
-                font-size: 1.1em;
-                font-weight: 700;
-                color: rgba(255, 255, 255, 0.95);
-                text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-                font-variant-numeric: tabular-nums;
-                font-feature-settings: "tnum";
-                white-space: nowrap;
-                
-                select {
-                    background: linear-gradient(135deg, #5a5a7a 0%, #4a4a6a 100%);
-                    color: white;
-                    border: 2px solid rgba(99, 102, 241, 0.3);
-                    padding: 4px 8px;
-                    border-radius: 8px;
-                    font-size: 0.9em;
-                    cursor: pointer;
-                    font-weight: 600;
-                    box-shadow: 
-                        0 2px 8px rgba(0, 0, 0, 0.3),
-                        0 4px 16px rgba(99, 102, 241, 0.2);
-                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-                    min-width: 50px;
-                    
-                    &:hover {
-                        background: linear-gradient(135deg, #6a6a8a 0%, #5a5a7a 100%);
-                        border-color: rgba(99, 102, 241, 0.5);
-                        transform: translateY(-1px);
-                    }
-                    
-                    option {
-                        background-color: #3a3a5a;
-                        color: white;
-                    }
-                }
-            }
-        }
-    }
-}
-
+// 移动端适配
 @media (max-width: 480px) {
     .game {
         flex: 1 1 auto;
     }
     
     .scene-container {
-        padding-bottom: 55%;
+        min-height: 150px;
     }
     
     .queue-container {
         height: 50px;
-        margin-top: 8px;
     }
     
-    .button-container {
+    .bottom-area {
         margin-top: 8px;
+        gap: 8px;
+        padding-left: 8px;
+        padding-right: 8px;
     }
     
-    .level {
-        padding: 6px 0;
-        
-        .game-stats {
-            gap: 6px;
-            
-            .stat-item {
-                gap: 1px;
-                
-                .stat-label {
-                    font-size: 0.7em;
-                }
-                
-                .stat-value {
-                    font-size: 1em;
-                    
-                    select {
-                        padding: 3px 6px;
-                        font-size: 0.85em;
-                        min-width: 40px;
-                    }
-                }
-            }
+    .props-button {
+        padding: 8px 10px;
+        font-size: 0.75em;
+    }
+    
+    .top-info {
+        padding: 6px 8px;
+        gap: 8px;
+    }
+    
+    .score-display {
+        .score-value {
+            font-size: 1.2em;
+        }
+    }
+    
+    .progress-display {
+        .progress-bar-container {
+            width: 80px;
         }
     }
     
@@ -275,39 +333,41 @@
 
 @media (max-width: 375px) {
     .scene-container {
-        padding-bottom: 45%;
+        min-height: 120px;
     }
     
     .queue-container {
         height: 45px;
-        margin-top: 6px;
     }
     
-    .button-container {
+    .bottom-area {
         margin-top: 6px;
+        gap: 6px;
     }
     
-    .level {
-        padding: 4px 0;
+    .props-button {
+        padding: 6px 8px;
+        font-size: 0.7em;
+    }
+    
+    .top-info {
+        padding: 4px 6px;
+    }
+    
+    .score-display {
+        .score-value {
+            font-size: 1em;
+        }
+    }
+    
+    .progress-display {
+        .progress-bar-container {
+            width: 60px;
+            height: 6px;
+        }
         
-        .game-stats {
-            gap: 4px;
-            
-            .stat-item {
-                .stat-label {
-                    font-size: 0.65em;
-                }
-                
-                .stat-value {
-                    font-size: 0.9em;
-                    
-                    select {
-                        padding: 2px 4px;
-                        font-size: 0.8em;
-                        min-width: 35px;
-                    }
-                }
-            }
+        .progress-info {
+            font-size: 0.6em;
         }
     }
 }

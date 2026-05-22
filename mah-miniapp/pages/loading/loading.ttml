@@ -1,41 +1,36 @@
-<!-- 开屏加载页面 -->
+<!-- 开屏加载页面 - 包了个包主题 -->
 <view class="loading-container">
-  <!-- 背景 -->
-  <image class="bg-image" src="images/loading-bg.png" mode="aspectFill" />
-  
   <!-- 游戏Logo -->
   <view class="logo-container">
     <view class="logo-icon">
-      <image class="logo-img" src="images/logo.png" mode="aspectFit" />
+      <text class="logo-emoji">B</text>
     </view>
-    <text class="logo-title">麻将消消乐</text>
-    <text class="logo-subtitle">三消益智游戏</text>
+    <text class="logo-title">包了个包</text>
+    <text class="logo-subtitle">麻将三消益智游戏</text>
   </view>
 
   <!-- 加载进度区域 -->
   <view class="progress-area">
-    <!-- 进度条 -->
-    <view class="progress-bar-container">
-      <view class="progress-bar-bg">
-        <view class="progress-bar-fill" style="width: {{loadingProgress}}%"></view>
-      </view>
+    <view class="progress-bar-bg">
+      <view class="progress-bar-fill" style="width: {{loadingProgress}}%"></view>
+      <view class="progress-glow"></view>
+    </view>
+    <view class="progress-info">
       <text class="progress-text">{{loadingProgress}}%</text>
+      <text class="loading-text">{{loadingText}}</text>
     </view>
-    
-    <!-- 加载文案 -->
-    <text class="loading-text">{{loadingText}}</text>
   </view>
 
-  <!-- 游戏提示轮播 -->
+  <!-- 游戏提示 - 面包主题 -->
   <view class="tips-area" tt:if="{{showTip}}">
-    <view class="tip-bubble">
-      <text class="tip-icon">Tip</text>
-      <text class="tip-content">{{tips[tipIndex]}}</text>
+    <view class="tip-icon">
+      <text class="tip-emoji">* </text>
     </view>
+    <text class="tip-content">{{tips[tipIndex]}}</text>
   </view>
 
-  <!-- 底部版权信息 -->
-  <view class="footer">
-    <text class="footer-text">Powered by Hermes</text>
+  <!-- 版本信息 -->
+  <view class="version-info">
+    <text class="version-text">v1.0.0</text>
   </view>
 </view>

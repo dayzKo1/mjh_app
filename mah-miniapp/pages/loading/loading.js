@@ -1,22 +1,24 @@
 /**
- * 开屏加载页面
+ * 开屏加载页面 - 包了个包主题
  * 显示加载动画，预加载资源后跳转到关卡选择
  */
 
 Page({
   data: {
     loadingProgress: 0,
-    loadingText: '正在加载游戏资源...',
+    loadingText: '正在准备面团...',
     showTip: false,
     tipIndex: 0,
   },
 
+  // 面包主题提示文案
   tips: [
-    '点击消除相同的三张麻将牌',
-    '暂存槽最多容纳7张牌',
+    '点击相同的三张麻将牌即可消除',
+    '暂存槽最多容纳7张牌，满了就失败',
     '道具可以帮助你更快通关',
-    '通关上一关解锁下一关',
-    '每次操作会增加倒计时时间',
+    '通关上一关才能解锁下一关',
+    '每次点击会增加倒计时时间',
+    '被覆盖的牌无法点击，需要先点击上层',
   ],
 
   onLoad() {
@@ -29,10 +31,20 @@ Page({
     if (this._tipTimer) clearInterval(this._tipTimer);
   },
 
-  /** 启动加载动画 */
+  /** 启动加载动画 - 面包主题 */
   startLoading() {
+    const loadingTexts = [
+      { progress: 0, text: '正在准备面团...' },
+      { progress: 20, text: '揉制麻将牌...' },
+      { progress: 40, text: '烘焙关卡数据...' },
+      { progress: 60, text: '撒上道具配料...' },
+      { progress: 80, text: '检查游戏引擎...' },
+      { progress: 95, text: '即将开炉...' },
+      { progress: 100, text: '加载完成!' },
+    ];
+
     this._loadingTimer = setInterval(() => {
-      let progress = this.data.loadingProgress + Math.random() * 15 + 5;
+      let progress = this.data.loadingProgress + Math.random() * 12 + 3;
       
       if (progress >= 100) {
         progress = 100;
@@ -46,20 +58,22 @@ Page({
         // 延迟跳转
         setTimeout(() => {
           tt.redirectTo({ url: '/pages/levels/levels' });
-        }, 500);
+        }, 800);
       } else {
-        // 更新加载文案
-        let loadingText = '正在加载游戏资源...';
-        if (progress > 30) loadingText = '准备麻将牌...';
-        if (progress > 60) loadingText = '初始化游戏引擎...';
-        if (progress > 85) loadingText = '即将进入...';
+        // 根据进度更新文案
+        let loadingText = loadingTexts[0].text;
+        for (const item of loadingTexts) {
+          if (progress >= item.progress) {
+            loadingText = item.text;
+          }
+        }
 
         this.setData({
           loadingProgress: progress,
           loadingText,
         });
       }
-    }, 200);
+    }, 180);
   },
 
   /** 显示提示轮播 */
@@ -69,6 +83,6 @@ Page({
     this._tipTimer = setInterval(() => {
       let tipIndex = (this.data.tipIndex + 1) % this.tips.length;
       this.setData({ tipIndex });
-    }, 3000);
+    }, 4000);
   },
 });

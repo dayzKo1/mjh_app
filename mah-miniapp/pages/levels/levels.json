@@ -1,8 +1,6 @@
 {
   "navigationBarTitleText": "关卡选择",
-  "navigationBarBackgroundColor": "#2d5a27",
-  "navigationBarTextStyle": "white",
-  "backgroundColor": "#2d5a27",
-  "backgroundTextStyle": "light",
-  "pageOrientation": "landscape"
+  "navigationStyle": "custom",
+  "pageOrientation": "landscape",
+  "usingComponents": {}
 }

@@ -1,13 +1,12 @@
 {
-  "compileType": "game",
-  "miniprogramRoot": "./",
-  "projectname": "mahjong-match-game",
-  "setting": {
-    "es6": true,
-    "postcss": true,
-    "minified": true,
-    "newFeature": true
-  },
-  "appid": "testAppId",
-  "condition": {}
+    "compileType": "game",
+    "miniprogramRoot": "./",
+    "projectname": "mahjong-match-game",
+    "setting": {
+        "es6": true,
+        "postcss": true,
+        "minified": true,
+        "newFeature": true
+    },
+    "appid": "tt12ec64518c8bd5db02"
 }

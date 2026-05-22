@@ -1,12 +1,14 @@
-/* 关卡选择页面样式 */
+/* 关卡选择页面样式 - 包了个包主题 */
 
 .container {
-  min-height: 100vh;
-  background: linear-gradient(180deg, #2d5a27 0%, #3d7a35 20%, #4a8f42 50%, #3d7a35 80%, #2d5a27 100%);
+  width: 100vw;
+  height: 100vh;
+  background: linear-gradient(180deg, #fef3c7 0%, #fde68a 40%, #fcd34d 70%, #f59e0b 100%);
   display: flex;
   flex-direction: column;
-  padding: 20rpx;
+  padding: 16rpx 24rpx;
   box-sizing: border-box;
+  position: relative;
 }
 
 /* ===== 顶部状态栏 ===== */
@@ -14,23 +16,40 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16rpx 24rpx;
-  background: rgba(0, 0, 0, 0.18);
-  border-radius: 40rpx;
-  margin-bottom: 24rpx;
+  padding: 12rpx 20rpx;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 24rpx;
+  box-shadow: 0 4rpx 16rpx rgba(245, 158, 11, 0.2);
 }
 
 .header-left {
   display: flex;
   align-items: center;
+  gap: 12rpx;
+}
+
+.logo-mini {
+  width: 48rpx;
+  height: 48rpx;
+  border-radius: 12rpx;
+  background: linear-gradient(145deg, #fcd34d, #f59e0b);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2rpx 8rpx rgba(245, 158, 11, 0.3);
+}
+
+.logo-icon-text {
+  font-size: 24rpx;
+  font-weight: 900;
+  color: #fff;
 }
 
 .title {
-  font-size: 36rpx;
+  font-size: 32rpx;
   font-weight: 900;
-  color: #f7e358;
-  text-shadow: 0 2rpx 0 #8b6914, 0 4rpx 12rpx rgba(0, 0, 0, 0.35);
-  letter-spacing: 4rpx;
+  color: #92400e;
+  text-shadow: 0 1rpx 0 rgba(255, 255, 255, 0.5);
 }
 
 .header-right {
@@ -38,153 +57,175 @@
   align-items: center;
 }
 
-.score-info {
+.score-badge {
   display: flex;
   align-items: center;
   gap: 8rpx;
+  padding: 8rpx 16rpx;
+  background: linear-gradient(145deg, #fff8dc, #ffe4b5);
+  border-radius: 20rpx;
+  box-shadow: 0 2rpx 8rpx rgba(245, 158, 11, 0.2);
 }
 
 .score-label {
-  font-size: 24rpx;
-  color: rgba(255, 255, 255, 0.7);
+  font-size: 16rpx;
+  color: #a16207;
 }
 
 .score-value {
-  font-size: 32rpx;
-  font-weight: 800;
-  color: #f7e358;
+  font-size: 20rpx;
+  font-weight: 700;
+  color: #92400e;
 }
 
 /* ===== 关卡网格 ===== */
 .levels-container {
   flex: 1;
-  overflow-y: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20rpx;
 }
 
 .levels-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 20rpx;
-  padding: 8rpx;
+  grid-template-columns: repeat(5, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 16rpx;
+  width: 100%;
+  max-width: 95%;
 }
 
 .level-item {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  padding: 24rpx 20rpx;
-  background: rgba(255, 255, 255, 0.08);
+  justify-content: center;
+  padding: 16rpx 12rpx;
+  background: rgba(255, 255, 255, 0.6);
   border-radius: 20rpx;
-  border: 2rpx solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 6rpx 20rpx rgba(0, 0, 0, 0.2);
+  box-shadow: 
+    0 4rpx 16rpx rgba(245, 158, 11, 0.15),
+    0 2rpx 8rpx rgba(0, 0, 0, 0.05);
   transition: all 0.2s ease;
   position: relative;
 }
 
 .level-item.unlocked {
-  background: linear-gradient(170deg, #fffef9 0%, #faf5e8 40%, #efe0c6 100%);
-  border-color: rgba(200, 160, 80, 0.35);
+  background: linear-gradient(170deg, #fffef9 0%, #faf5e8 40%, #fef3c7 100%);
+  box-shadow: 
+    0 6rpx 20rpx rgba(245, 158, 11, 0.25),
+    0 3rpx 10rpx rgba(0, 0, 0, 0.08),
+    inset 0 1rpx 0 rgba(255, 255, 255, 0.8);
 }
 
 .level-item.unlocked:active {
-  transform: scale(0.96);
-  box-shadow: 0 3rpx 12rpx rgba(0, 0, 0, 0.25);
+  transform: scale(0.95);
+  box-shadow: 0 2rpx 10rpx rgba(245, 158, 11, 0.2);
 }
 
 .level-item.locked {
-  opacity: 0.6;
+  opacity: 0.5;
+  background: rgba(156, 163, 175, 0.2);
 }
 
-/* ===== 关卡编号 ===== */
+/* ===== 关卡编号 - 面包形状 ===== */
 .level-number {
-  width: 60rpx;
-  height: 60rpx;
-  border-radius: 50%;
+  width: 52rpx;
+  height: 52rpx;
+  border-radius: 16rpx;
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-right: 16rpx;
-  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.3);
+  margin-bottom: 10rpx;
+  box-shadow: 
+    0 3rpx 10rpx rgba(0, 0, 0, 0.2),
+    inset 0 2rpx 0 rgba(255, 255, 255, 0.3);
 }
 
 .level-num-text {
-  font-size: 28rpx;
+  font-size: 26rpx;
   font-weight: 900;
-  color: #5a3e0b;
+  color: #fff;
 }
 
 /* ===== 关卡信息 ===== */
 .level-info {
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 4rpx;
 }
 
 .level-name {
-  font-size: 28rpx;
-  font-weight: 800;
-  color: #5a3e0b;
+  font-size: 20rpx;
+  font-weight: 700;
+  color: #92400e;
+}
+
+.level-item.locked .level-name {
+  color: #6b7280;
 }
 
 .level-stars {
   display: flex;
-  gap: 4rpx;
+  gap: 2rpx;
 }
 
 .star {
-  font-size: 24rpx;
-  color: rgba(200, 160, 80, 0.3);
+  font-size: 18rpx;
+  color: rgba(156, 163, 175, 0.4);
 }
 
 .star-filled {
-  color: #f7e358;
+  color: #f59e0b;
 }
 
 .level-score {
-  font-size: 22rpx;
-  color: #8b6914;
+  font-size: 16rpx;
+  color: #b45309;
+  font-weight: 600;
 }
 
 .level-locked-info {
-  font-size: 22rpx;
-  color: rgba(255, 255, 255, 0.6);
-}
-
-.level-item.locked .level-name,
-.level-item.locked .level-locked-info {
-  color: rgba(255, 255, 255, 0.6);
+  font-size: 14rpx;
+  color: #6b7280;
 }
 
 /* ===== 锁定图标 ===== */
 .lock-icon {
   position: absolute;
-  right: 16rpx;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 40rpx;
-  height: 40rpx;
+  right: 8rpx;
+  top: 8rpx;
+  width: 24rpx;
+  height: 24rpx;
   display: flex;
   justify-content: center;
   align-items: center;
+  background: rgba(156, 163, 175, 0.3);
+  border-radius: 8rpx;
 }
 
 .lock-text {
-  font-size: 24rpx;
-  color: rgba(255, 255, 255, 0.5);
+  font-size: 14rpx;
+  font-weight: 700;
+  color: #6b7280;
 }
 
 /* ===== 已通关标记 ===== */
 .completed-mark {
   position: absolute;
-  right: 16rpx;
-  top: 16rpx;
-  padding: 4rpx 12rpx;
-  background: linear-gradient(180deg, #4CAF50, #388E3C);
-  border-radius: 12rpx;
+  left: 8rpx;
+  top: 8rpx;
+  padding: 3rpx 8rpx;
+  background: linear-gradient(180deg, #22c55e, #16a34a);
+  border-radius: 10rpx;
+  box-shadow: 0 2rpx 6rpx rgba(34, 197, 94, 0.3);
 }
 
 .completed-text {
-  font-size: 18rpx;
-  font-weight: bold;
+  font-size: 12rpx;
+  font-weight: 700;
   color: #fff;
 }
 
@@ -193,25 +234,36 @@
   display: flex;
   justify-content: center;
   gap: 24rpx;
-  padding: 16rpx;
-  margin-top: 24rpx;
+  padding: 12rpx;
 }
 
 .nav-btn {
-  padding: 16rpx 40rpx;
-  background: linear-gradient(180deg, #f7e358, #e8c830);
-  border-radius: 40rpx;
-  box-shadow: 0 6rpx 20rpx rgba(247, 227, 88, 0.4);
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  padding: 12rpx 28rpx;
+  background: linear-gradient(180deg, #fff8dc, #ffe4b5);
+  border-radius: 24rpx;
+  box-shadow: 
+    0 4rpx 16rpx rgba(245, 158, 11, 0.25),
+    inset 0 1rpx 0 rgba(255, 255, 255, 0.8);
 }
 
 .nav-btn:active {
   transform: scale(0.95);
+  box-shadow: 0 2rpx 8rpx rgba(245, 158, 11, 0.2);
+}
+
+.nav-btn-icon {
+  font-size: 20rpx;
+  font-weight: 700;
+  color: #f59e0b;
 }
 
 .nav-btn-text {
-  font-size: 28rpx;
-  font-weight: 800;
-  color: #5a3e0b;
+  font-size: 22rpx;
+  font-weight: 700;
+  color: #92400e;
 }
 
 /* ===== 加载提示 ===== */
@@ -221,14 +273,35 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.75);
+  background: rgba(251, 191, 36, 0.9);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 1000;
 }
 
-.loading-text {
-  font-size: 32rpx;
-  color: #f7e358;
+.loading-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.loading-spinner {
+  width: 48rpx;
+  height: 48rpx;
+  border: 4rpx solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-mask .loading-text {
+  font-size: 24rpx;
+  font-weight: 600;
+  color: #fff;
 }

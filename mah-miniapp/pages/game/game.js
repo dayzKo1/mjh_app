@@ -1,10 +1,16 @@
 /**
- * 游戏页面 - 马将消消乐横屏版
- * 支持广告复活、道具看广告使用、倒计时警告
+ * 游戏页面 - 包了个包主题
+ * 麻将三消益智游戏
  */
 
 const { showRewardedAd } = require('../../utils/ad');
 const { playSound, preloadSounds, destroySounds } = require('../../utils/sound');
+
+// 关卡名称映射
+const LEVEL_NAMES = {
+  1: '吐司', 2: '甜甜圈', 3: '法棍', 4: '松饼', 5: '可颂',
+  6: '牛角包', 7: '菠萝包', 8: '丹麦包', 9: '欧包', 10: '大师包',
+};
 
 const MAHJONG_TILES = [
   'Bamboo_1', 'Bamboo_2', 'Bamboo_3', 'Bamboo_4', 'Bamboo_5',
@@ -151,6 +157,7 @@ function arrangeSlots(slots) {
 Page({
   data: {
     level: 1,
+    levelName: '吐司',
     score: 0,
     cards: [],
     slots: [null, null, null, null, null, null, null],
@@ -184,28 +191,20 @@ Page({
 
   onLoad(options) {
     const level = parseInt(options.level) || 1;
-    this.setData({ level });
+    this.setData({ 
+      level,
+      levelName: LEVEL_NAMES[level] || '吐司',
+    });
     preloadSounds();
   },
 
   onShow() {
     this.initGame();
-
-    const app = getApp();
-    if (app.globalData.sidebarSupported) {
-      this.setData({ showSidebarGift: true });
-    }
-    if (app.globalData.fromSidebar) {
-      this.setData({ sidebarTaskDone: true });
-    }
   },
 
   onUnload() {
     if (this.data.timer) {
       clearInterval(this.data.timer);
-    }
-    if (this._adTimer) {
-      clearInterval(this._adTimer);
     }
     destroySounds();
   },
@@ -213,10 +212,12 @@ Page({
   initGame() {
     const level = this.data.level;
     const cards = generateScene(level);
+    const levelName = LEVEL_NAMES[level] || '吐司';
 
-    console.log('关卡', level, '卡片数', cards.length);
+    console.log('关卡', level, levelName, '卡片数', cards.length);
 
     this.setData({
+      levelName,
       cards,
       slots: [null, null, null, null, null, null, null],
       animating: false,
@@ -454,14 +455,15 @@ Page({
   checkWin() {
     clearInterval(this.data.timer);
     playSound('win');
-    playSound('unlock');
     this.setData({ showWinModal: true, gameOverState: true });
   },
 
   nextLevel() {
     playSound('click');
+    const nextLevelId = this.data.level + 1;
     this.setData({
-      level: this.data.level + 1,
+      level: nextLevelId,
+      levelName: LEVEL_NAMES[nextLevelId] || '大师包',
       score: 0,
       showWinModal: false,
       gameOverState: false,
@@ -520,10 +522,6 @@ Page({
     this.setData({ showUndoPanel: true, undoCandidates });
   },
 
-  closeUndoPanel() {
-    this.setData({ showUndoPanel: false, undoCandidates: [] });
-  },
-
   selectUndoItem(e) {
     playSound('item');
 
@@ -552,7 +550,7 @@ Page({
       undoCandidates: [],
     });
 
-    tt.showToast({ title: '已取回方块', icon: 'success' });
+    tt.showToast({ title: '已取回牌', icon: 'success' });
   },
 
   useFindOrAd() {
@@ -601,10 +599,6 @@ Page({
     }));
 
     this.setData({ showFindPanel: true, findCandidates });
-  },
-
-  closeFindPanel() {
-    this.setData({ showFindPanel: false, findCandidates: [], hintCardId: null });
   },
 
   selectFindItem(e) {
@@ -667,10 +661,6 @@ Page({
     this.setData({ showBombPanel: true, bombCandidates });
   },
 
-  closeBombPanel() {
-    this.setData({ showBombPanel: false, bombCandidates: [] });
-  },
-
   selectBombItem(e) {
     playSound('bomb');
 
@@ -716,66 +706,15 @@ Page({
       'Bamboo_1': '一条', 'Bamboo_2': '二条', 'Bamboo_3': '三条',
       'Bamboo_4': '四条', 'Bamboo_5': '五条', 'Bamboo_6': '六条',
       'Bamboo_7': '七条', 'Bamboo_8': '八条', 'Bamboo_9': '九条',
-      'Char_1': '一万', 'Char_2': '两万', 'Char_3': '三万',
+      'Char_1': '一万', 'Char_2': '二万', 'Char_3': '三万',
       'Char_4': '四万', 'Char_5': '五万', 'Char_6': '六万',
       'Char_7': '七万', 'Char_8': '八万', 'Char_9': '九万',
-      'Wheel_1': '一筒', 'Wheel_2': '两筒', 'Wheel_3': '三筒',
+      'Wheel_1': '一筒', 'Wheel_2': '二筒', 'Wheel_3': '三筒',
       'Wheel_4': '四筒', 'Wheel_5': '五筒', 'Wheel_6': '六筒',
       'Wheel_7': '七筒', 'Wheel_8': '八筒', 'Wheel_9': '九筒',
       'Wind_East': '东', 'Wind_South': '南', 'Wind_West': '西', 'Wind_North': '北',
       'Dragon_Red': '红中', 'Dragon_Green': '发财', 'Dragon_White': '白板',
     };
     return names[icon] || icon;
-  },
-
-  goToProfile() {
-    tt.navigateTo({ url: '/pages/profile/profile' });
-  },
-
-  goToRank() {
-    tt.navigateTo({ url: '/pages/rank/rank' });
-  },
-
-  // ========== 侧边栏复访 ==========
-
-  onSidebarGiftTap() {
-    playSound('modal');
-    const app = getApp();
-    if (app.globalData.fromSidebar) {
-      this.setData({ sidebarTaskDone: true });
-    }
-    this.setData({ showSidebarModal: true });
-  },
-
-  closeSidebarModal() {
-    playSound('close-modal');
-    this.setData({ showSidebarModal: false });
-  },
-
-  async goToSidebar() {
-    playSound('click');
-    const app = getApp();
-    await app.navigateToSidebar();
-  },
-
-  claimSidebarReward() {
-    const app = getApp();
-    if (!app.globalData.fromSidebar) {
-      tt.showToast({ title: '请先从侧边栏进入游戏', icon: 'none' });
-      return;
-    }
-    if (app.globalData.sidebarRewardClaimed) {
-      tt.showToast({ title: '今日已领取', icon: 'none' });
-      return;
-    }
-
-    playSound('reward');
-    this.setData({
-      hintCount: this.data.hintCount + 3,
-      sidebarTaskDone: true,
-      showSidebarModal: false,
-    });
-    app.globalData.sidebarRewardClaimed = true;
-    tt.showToast({ title: '领取成功！提示+3', icon: 'success' });
   },
 });

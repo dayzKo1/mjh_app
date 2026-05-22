@@ -1,47 +1,47 @@
-<!-- 游戏页面 - 横屏布局 -->
+<!-- 游戏页面 - 包了个包主题 -->
 <view class="container">
-  <!-- 左侧：游戏区域 -->
-  <view class="left-panel">
-    <!-- 顶部状态栏 -->
-    <view class="top-bar">
-      <text class="top-bar-title">麻将消消乐</text>
-      <view class="top-bar-stats">
-        <text class="top-stat">第{{level}}关</text>
-        <text class="top-stat-divider">|</text>
-        <text class="top-stat">{{score}}分</text>
-      </view>
+  <!-- 左上角：积分显示 -->
+  <view class="corner corner-left-top">
+    <view class="score-box">
+      <text class="score-label">积分</text>
+      <text class="score-value">{{score}}</text>
     </view>
-
-    <!-- 倒计时进度条 -->
-    <view class="time-bar-container">
-      <view class="time-bar-bg">
-        <view class="time-bar-fill" style="width: {{timeProgress}}%; background: {{timeProgress > 30 ? '#4CAF50' : timeProgress > 15 ? '#FF9800' : '#F44336'}}"></view>
-      </view>
-    </view>
-
-    <!-- 游戏区域 -->
-    <view class="game-area">
-      <view
-        tt:for="{{cards}}"
-        tt:key="id"
-        class="card {{item.isCover ? 'covered' : ''}} {{item.status === 2 ? 'removed' : ''}} {{item.status === 1 ? 'picked' : ''}} {{hintCardId === item.id ? 'hint-highlight' : ''}}"
-        data-index="{{index}}"
-        bindtap="onCardTap"
-        style="left:{{item.x}}rpx; top:{{item.y}}rpx; z-index:{{10 + item.layer}};"
-      >
-        <image
-          class="card-img"
-          src="/images/{{item.icon}}.png"
-          mode="aspectFit"
-        />
-      </view>
+    <view class="level-box">
+      <text class="level-text">{{levelName}}</text>
     </view>
   </view>
 
-  <!-- 右侧：控件区域 -->
-  <view class="right-panel">
-    <!-- 暂存槽 -->
-    <view class="slots-bar">
+  <!-- 右上角：进度条 -->
+  <view class="corner corner-right-top">
+    <view class="progress-box">
+      <view class="progress-bar-bg">
+        <view class="progress-bar-fill" style="width: {{timeProgress}}%; background: {{timeProgress > 30 ? '#22c55e' : timeProgress > 15 ? '#f59e0b' : '#ef4444'}}"></view>
+      </view>
+      <text class="progress-text">{{timeProgress}}%</text>
+    </view>
+  </view>
+
+  <!-- 中央游戏区域 - 麻将牌 -->
+  <view class="game-area">
+    <view
+      tt:for="{{cards}}"
+      tt:key="id"
+      class="card {{item.isCover ? 'covered' : ''}} {{item.status === 2 ? 'removed' : ''}} {{item.status === 1 ? 'picked' : ''}} {{hintCardId === item.id ? 'hint-highlight' : ''}}"
+      data-index="{{index}}"
+      bindtap="onCardTap"
+      style="left:{{item.x}}rpx; top:{{item.y}}rpx; z-index:{{10 + item.layer}};"
+    >
+      <image
+        class="card-img"
+        src="/images/{{item.icon}}.png"
+        mode="aspectFit"
+      />
+    </view>
+  </view>
+
+  <!-- 左下角：暂存槽 -->
+  <view class="corner corner-left-bottom">
+    <view class="slots-container">
       <view
         tt:for="{{slots}}"
         tt:key="index"
@@ -56,45 +56,37 @@
         />
       </view>
     </view>
+  </view>
 
-    <!-- 道具按钮 -->
-    <view class="btns-bar">
-      <view class="btn-item">
-        <view class="btn" bindtap="useUndoOrAd">
-          <text class="btn-text">回退</text>
-          <text class="btn-count">{{undoCount}}</text>
+  <!-- 右下角：道具按钮 -->
+  <view class="corner corner-right-bottom">
+    <view class="props-container">
+      <view class="prop-item">
+        <view class="prop-btn" bindtap="useUndoOrAd">
+          <text class="prop-btn-text">回退</text>
+          <text class="prop-btn-count">{{undoCount}}</text>
         </view>
-        <view class="btn-ad" tt:if="{{undoCount <= 0}}" bindtap="watchAdForUndo">
-          <text class="btn-ad-text">看广告</text>
-        </view>
-      </view>
-      <view class="btn-item">
-        <view class="btn" bindtap="useFindOrAd">
-          <text class="btn-text">寻找</text>
-          <text class="btn-count">{{findCount}}</text>
-        </view>
-        <view class="btn-ad" tt:if="{{findCount <= 0}}" bindtap="watchAdForFind">
-          <text class="btn-ad-text">看广告</text>
+        <view class="prop-ad-btn" tt:if="{{undoCount <= 0}}" bindtap="watchAdForUndo">
+          <text class="prop-ad-text">看广告</text>
         </view>
       </view>
-      <view class="btn-item">
-        <view class="btn" bindtap="useBombOrAd">
-          <text class="btn-text">炸弹</text>
-          <text class="btn-count">{{bombCount}}</text>
+      <view class="prop-item">
+        <view class="prop-btn" bindtap="useFindOrAd">
+          <text class="prop-btn-text">寻找</text>
+          <text class="prop-btn-count">{{findCount}}</text>
         </view>
-        <view class="btn-ad" tt:if="{{bombCount <= 0}}" bindtap="watchAdForBomb">
-          <text class="btn-ad-text">看广告</text>
+        <view class="prop-ad-btn" tt:if="{{findCount <= 0}}" bindtap="watchAdForFind">
+          <text class="prop-ad-text">看广告</text>
         </view>
       </view>
-    </view>
-
-    <!-- 导航 -->
-    <view class="nav-bar">
-      <view class="nav-item" bindtap="goToProfile">
-        <text class="nav-text">我的</text>
-      </view>
-      <view class="nav-item" bindtap="goToRank">
-        <text class="nav-text">排行</text>
+      <view class="prop-item">
+        <view class="prop-btn" bindtap="useBombOrAd">
+          <text class="prop-btn-text">炸弹</text>
+          <text class="prop-btn-count">{{bombCount}}</text>
+        </view>
+        <view class="prop-ad-btn" tt:if="{{bombCount <= 0}}" bindtap="watchAdForBomb">
+          <text class="prop-ad-text">看广告</text>
+        </view>
       </view>
     </view>
   </view>
@@ -110,7 +102,7 @@
         </view>
         <view class="stat-item">
           <text class="stat-label">关卡</text>
-          <text class="stat-value">第{{level}}关</text>
+          <text class="stat-value">{{levelName}}</text>
         </view>
       </view>
       <view class="modal-btns">
@@ -127,7 +119,6 @@
       <text class="modal-desc">看广告可增加30秒时间</text>
       <view class="modal-btns">
         <view class="modal-btn primary ad-btn" bindtap="watchAdForTime">
-          <text class="btn-ad-icon">播放</text>
           <text class="btn-ad-text">看广告 +30s</text>
         </view>
         <view class="modal-btn" bindtap="continueWithoutAd">继续游戏</view>
@@ -146,13 +137,12 @@
         </view>
         <view class="stat-item">
           <text class="stat-label">关卡</text>
-          <text class="stat-value">第{{level}}关</text>
+          <text class="stat-value">{{levelName}}</text>
         </view>
       </view>
       <text class="modal-desc">看广告可从当前进度继续</text>
       <view class="modal-btns">
         <view class="modal-btn primary ad-btn" bindtap="watchAdToRevive">
-          <text class="btn-ad-icon">播放</text>
           <text class="btn-ad-text">看广告复活</text>
         </view>
         <view class="modal-btn" bindtap="restartGame">重新开始</view>
@@ -166,7 +156,7 @@
     <view class="prop-panel-mask" bindtap="closeAllPanels"></view>
     <view class="prop-panel-content">
       <view class="prop-panel-header">
-        <text class="prop-panel-title">{{showUndoPanel ? '选择要取回的方块' : showFindPanel ? '选择要寻找的类型' : '选择要炸掉的方块'}}</text>
+        <text class="prop-panel-title">{{showUndoPanel ? '选择要取回的牌' : showFindPanel ? '选择要寻找的类型' : '选择要炸掉的牌'}}</text>
         <view class="prop-panel-close" bindtap="closeAllPanels">X</view>
       </view>
       <view class="prop-panel-body">
@@ -174,7 +164,7 @@
           <view
             tt:for="{{undoCandidates}}"
             tt:key="id"
-            class="prop-item"
+            class="prop-item-card"
             data-index="{{index}}"
             bindtap="selectUndoItem"
           >
@@ -186,7 +176,7 @@
           <view
             tt:for="{{findCandidates}}"
             tt:key="icon"
-            class="prop-item {{item.canEliminate ? 'highlight' : ''}}"
+            class="prop-item-card {{item.canEliminate ? 'highlight' : ''}}"
             data-index="{{index}}"
             bindtap="selectFindItem"
           >
@@ -199,7 +189,7 @@
           <view
             tt:for="{{bombCandidates}}"
             tt:key="id"
-            class="prop-item"
+            class="prop-item-card"
             data-index="{{index}}"
             bindtap="selectBombItem"
           >
