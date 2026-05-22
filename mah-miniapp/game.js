@@ -880,195 +880,161 @@ function drawBranchSelect() {
   });
 }
 
-/** 绘制单个分支的关卡地图 */
+/** 绘制单个分支的关卡地图 - 横向卷轴风格 */
 function drawBranchMap(branch, branchKey) {
   // 分支标题
   ctx.fillStyle = branch.color;
   ctx.shadowColor = 'rgba(0,0,0,0.2)';
   ctx.shadowBlur = 6;
-  roundRect(ctx, W * 0.25, H * 0.08, W * 0.5, H * 0.05, 8);
+  roundRect(ctx, W * 0.35, H * 0.03, W * 0.3, H * 0.04, 8);
   ctx.fill();
   ctx.shadowColor = 'transparent';
   
   ctx.fillStyle = '#fff';
-  ctx.font = `bold ${Math.floor(H * 0.025)}px sans-serif`;
-  ctx.fillText(branch.name, W / 2, H * 0.08 + H * 0.025);
+  ctx.font = `bold ${Math.floor(H * 0.02)}px sans-serif`;
+  ctx.fillText(branch.name, W / 2, H * 0.03 + H * 0.02);
   
-  // 入口关卡
-  const entryY = H * 0.15;
-  drawMapEntry(branch, branchKey, W * 0.25, entryY, W * 0.5);
-  
-  // 三条线路
-  const lineY = entryY + H * 0.17;
-  drawBranchLines(branch, branchKey, lineY);
-}
-
-/** 绘制地图上的入口关卡 */
-function drawMapEntry(branch, branchKey, entryX, entryY, entryWidth) {
-  const entry = branch.entry;
-  const isUnlocked = entryCompleted[branchKey] || unlockedLevels[branchKey]?.entry;
-  
-  // 入口关卡卡片
-  const cardW = entryWidth * 0.4;
-  const cardH = H * 0.13;
-  const cardX = entryX + (entryWidth - cardW) / 2;
-  
-  ctx.fillStyle = isUnlocked ? branch.color : 'rgba(100,100,100,0.4)';
-  ctx.shadowColor = 'rgba(0,0,0,0.2)';
-  ctx.shadowBlur = 6;
-  roundRect(ctx, cardX, entryY, cardW, cardH, 8);
+  // 绘制路径背景（草地/道路）
+  ctx.fillStyle = 'rgba(34,139,34,0.15)';
+  roundRect(ctx, W * 0.02, H * 0.1, W * 0.96, H * 0.85, 20);
   ctx.fill();
-  ctx.shadowColor = 'transparent';
   
-  // 关卡名称
-  ctx.fillStyle = isUnlocked ? '#fff' : '#888';
-  ctx.font = `bold ${Math.floor(cardH * 0.22)}px sans-serif`;
-  ctx.fillText(entry.name, cardX + cardW / 2, entryY + cardH * 0.22);
+  // 入口关卡 - 起点位置
+  const startX = W * 0.08;
+  const startY = H * 0.5;
+  drawLevelNode(branch.entry, startX, startY, entryCompleted[branchKey] || unlockedLevels[branchKey]?.entry, branch.color, 'entry');
   
-  // 难度星星
-  const stars = Math.min(entry.difficulty, 5);
-  ctx.fillStyle = isUnlocked ? '#f7e358' : '#666';
-  ctx.font = `${Math.floor(cardH * 0.12)}px sans-serif`;
-  ctx.fillText(Array(stars).fill('').join(''), cardX + cardW / 2, entryY + cardH * 0.4);
+  // 三条线路从入口分支
+  const branchPointX = startX + W * 0.12;
+  const lineOffsets = [
+    { y: H * 0.25, color: '#4CAF50' },  // 上路 - 绿色
+    { y: H * 0.5, color: '#2196F3' },    // 中路 - 蓝色
+    { y: H * 0.75, color: '#FF9800' }    // 下路 - 橙色
+  ];
   
-  // 形状标识
-  ctx.fillStyle = isUnlocked ? 'rgba(255,255,255,0.6)' : '#555';
-  ctx.font = `${Math.floor(cardH * 0.1)}px sans-serif`;
-  ctx.fillText(entry.shape || 'grid', cardX + cardW / 2, entryY + cardH * 0.52);
+  // 绘制分支路径线
+  ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+  ctx.lineWidth = 3;
+  ctx.setLineDash([8, 4]);
   
-  if (isUnlocked) {
-    // 开始按钮
-    const btnH = cardH * 0.2;
-    const btnY = entryY + cardH * 0.72;
-    ctx.fillStyle = '#f7e358';
-    roundRect(ctx, cardX + cardW * 0.25, btnY, cardW * 0.5, btnH, btnH / 2);
-    ctx.fill();
-    ctx.fillStyle = '#5a3e0b';
-    ctx.font = `bold ${Math.floor(btnH * 0.5)}px sans-serif`;
-    ctx.fillText('开始', cardX + cardW / 2, btnY + btnH / 2);
-  } else {
-    ctx.fillStyle = 'rgba(0,0,0,0.3)';
-    roundRect(ctx, cardX, entryY, cardW, cardH, 8);
-    ctx.fill();
-    ctx.fillStyle = '#777';
-    ctx.font = `${Math.floor(cardH * 0.12)}px sans-serif`;
-    ctx.fillText('未解锁', cardX + cardW / 2, entryY + cardH * 0.75);
-  }
-}
-
-/** 绘制分支的三条线路 */
-function drawBranchLines(branch, branchKey, lineY) {
-  const lines = branch.lines;
-  const lineCount = lines.length;
-  const lineH = H * 0.28;
-  const lineGap = H * 0.015;
-  const lineWidth = W * 0.94;
-  const lineStartX = W * 0.03;
+  // 入口到分支点
+  ctx.beginPath();
+  ctx.moveTo(startX + W * 0.05, startY);
+  ctx.lineTo(branchPointX, startY);
+  ctx.stroke();
   
-  // 连接入口关卡到三条线路的箭头
-  const arrowStartX = W / 2;
-  const arrowStartY = lineY - H * 0.01;
-  
-  lines.forEach((line, i) => {
-    const lineCardY = lineY + i * (lineH + lineGap);
-    const arrowEndY = lineCardY + lineH * 0.08;
-    
-    ctx.strokeStyle = 'rgba(255,255,255,0.25)';
-    ctx.lineWidth = 2;
+  // 分支点到各线路
+  lineOffsets.forEach((offset, i) => {
     ctx.beginPath();
-    ctx.moveTo(arrowStartX, arrowStartY);
-    ctx.lineTo(lineStartX + lineWidth * 0.03, arrowEndY);
+    ctx.moveTo(branchPointX, startY);
+    ctx.bezierCurveTo(
+      branchPointX + W * 0.05, startY,
+      branchPointX + W * 0.05, offset.y,
+      branchPointX + W * 0.08, offset.y
+    );
     ctx.stroke();
   });
   
-  // 绘制每条线路
-  lines.forEach((line, lineIdx) => {
-    const lineCardY = lineY + lineIdx * (lineH + lineGap);
+  ctx.setLineDash([]);
+  
+  // 绘制三条线路的关卡节点
+  const levelSpacing = W * 0.18;
+  branch.lines.forEach((line, lineIdx) => {
+    const baseY = lineOffsets[lineIdx].y;
+    const lineColor = lineOffsets[lineIdx].color;
     
-    // 线路名称背景
-    ctx.fillStyle = 'rgba(255,255,255,0.08)';
-    roundRect(ctx, lineStartX, lineCardY, lineWidth * 0.12, lineH, 6);
+    // 线路名称标签
+    ctx.fillStyle = lineColor;
+    ctx.globalAlpha = 0.8;
+    roundRect(ctx, branchPointX - W * 0.02, baseY - H * 0.02, W * 0.08, H * 0.04, 4);
     ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = '#fff';
+    ctx.font = `${Math.floor(H * 0.018)}px sans-serif`;
+    ctx.fillText(line.name, branchPointX + W * 0.02, baseY);
     
-    // 线路名称
-    ctx.fillStyle = line.color;
-    ctx.font = `bold ${Math.floor(lineH * 0.1)}px sans-serif`;
-    ctx.fillText(line.name, lineStartX + lineWidth * 0.06, lineCardY + lineH * 0.08);
+    // 绘制线路路径
+    const lineStartX = branchPointX + W * 0.1;
+    const lineEndX = lineStartX + (line.levels.length - 1) * levelSpacing + W * 0.06;
     
-    // 线路关卡横向排列
-    const levels = line.levels;
-    const levelStartX = lineStartX + lineWidth * 0.14;
-    const levelCount = levels.length;
-    const levelCardW = lineWidth * 0.25;
-    const levelCardH = lineH * 0.85;
-    const levelGap = lineWidth * 0.015;
+    ctx.strokeStyle = lineColor;
+    ctx.lineWidth = 4;
+    ctx.globalAlpha = 0.5;
+    ctx.beginPath();
+    ctx.moveTo(lineStartX, baseY);
+    ctx.lineTo(lineEndX, baseY);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
     
-    levels.forEach((level, levelIdx) => {
-      const levelCardX = levelStartX + levelIdx * (levelCardW + levelGap);
-      const levelCardY = lineCardY + lineH * 0.08;
+    // 绘制关卡节点
+    line.levels.forEach((level, levelIdx) => {
+      const nodeX = lineStartX + levelIdx * levelSpacing;
       const isUnlocked = unlockedLevels[branchKey]?.[line.id]?.includes(level.id);
-      
-      // 连接箭头
-      if (levelIdx > 0) {
-        const prevX = levelStartX + (levelIdx - 1) * (levelCardW + levelGap) + levelCardW;
-        const arrowX = prevX + levelGap * 0.4;
-        ctx.fillStyle = isUnlocked ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.12)';
-        ctx.beginPath();
-        ctx.moveTo(arrowX, levelCardY + levelCardH / 2 - 5);
-        ctx.lineTo(arrowX + levelGap * 0.2, levelCardY + levelCardH / 2);
-        ctx.lineTo(arrowX, levelCardY + levelCardH / 2 + 5);
-        ctx.fill();
-      }
-      
-      // 关卡卡片
-      ctx.fillStyle = isUnlocked ? line.color : 'rgba(100,100,100,0.3)';
-      ctx.shadowColor = 'rgba(0,0,0,0.15)';
-      ctx.shadowBlur = 4;
-      roundRect(ctx, levelCardX, levelCardY, levelCardW, levelCardH, 8);
-      ctx.fill();
-      ctx.shadowColor = 'transparent';
-      
-      // 关卡名称
-      ctx.fillStyle = isUnlocked ? '#fff' : '#888';
-      ctx.font = `bold ${Math.floor(levelCardH * 0.12)}px sans-serif`;
-      ctx.fillText(level.name, levelCardX + levelCardW / 2, levelCardY + levelCardH * 0.12);
-      
-      // 难度星星
-      const stars = Math.min(level.difficulty, 5);
-      ctx.fillStyle = isUnlocked ? '#f7e358' : '#555';
-      ctx.font = `${Math.floor(levelCardH * 0.08)}px sans-serif`;
-      ctx.fillText(Array(stars).fill('').join(''), levelCardX + levelCardW / 2, levelCardY + levelCardH * 0.22);
-      
-      // 形状标识
-      ctx.fillStyle = isUnlocked ? 'rgba(255,255,255,0.5)' : '#444';
-      ctx.font = `${Math.floor(levelCardH * 0.06)}px sans-serif`;
-      ctx.fillText(level.shape || 'grid', levelCardX + levelCardW / 2, levelCardY + levelCardH * 0.3);
-      
-      // 关卡信息
-      ctx.fillStyle = isUnlocked ? 'rgba(255,255,255,0.6)' : '#444';
-      ctx.font = `${Math.floor(levelCardH * 0.05)}px sans-serif`;
-      ctx.fillText(`${level.iconCount}种 ${level.layers}层`, levelCardX + levelCardW / 2, levelCardY + levelCardH * 0.38);
-      
-      if (isUnlocked) {
-        // 开始按钮
-        const btnH = levelCardH * 0.12;
-        const btnY = levelCardY + levelCardH * 0.78;
-        ctx.fillStyle = '#f7e358';
-        roundRect(ctx, levelCardX + levelCardW * 0.2, btnY, levelCardW * 0.6, btnH, btnH / 2);
-        ctx.fill();
-        ctx.fillStyle = '#5a3e0b';
-        ctx.font = `bold ${Math.floor(btnH * 0.5)}px sans-serif`;
-        ctx.fillText('开始', levelCardX + levelCardW / 2, btnY + btnH / 2);
-      } else {
-        ctx.fillStyle = 'rgba(0,0,0,0.2)';
-        roundRect(ctx, levelCardX, levelCardY, levelCardW, levelCardH, 8);
-        ctx.fill();
-        ctx.fillStyle = '#777';
-        ctx.font = `${Math.floor(levelCardH * 0.08)}px sans-serif`;
-        ctx.fillText('未解锁', levelCardX + levelCardW / 2, levelCardY + levelCardH * 0.55);
-      }
+      drawLevelNode(level, nodeX, baseY, isUnlocked, lineColor, 'level', levelIdx);
     });
   });
+}
+
+/** 绘制关卡节点 */
+function drawLevelNode(level, x, y, isUnlocked, color, type, index) {
+  const nodeRadius = type === 'entry' ? H * 0.06 : H * 0.05;
+  
+  // 节点外圈光晕（解锁时）
+  if (isUnlocked) {
+    ctx.beginPath();
+    ctx.arc(x, y, nodeRadius * 1.3, 0, Math.PI * 2);
+    ctx.fillStyle = color;
+    ctx.globalAlpha = 0.2;
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+  
+  // 节点主体
+  ctx.beginPath();
+  ctx.arc(x, y, nodeRadius, 0, Math.PI * 2);
+  ctx.fillStyle = isUnlocked ? color : 'rgba(80,80,80,0.6)';
+  ctx.shadowColor = isUnlocked ? 'rgba(0,0,0,0.3)' : 'transparent';
+  ctx.shadowBlur = 6;
+  ctx.fill();
+  ctx.shadowColor = 'transparent';
+  
+  // 节点内圈
+  ctx.beginPath();
+  ctx.arc(x, y, nodeRadius * 0.7, 0, Math.PI * 2);
+  ctx.fillStyle = isUnlocked ? '#fff' : '#555';
+  ctx.globalAlpha = 0.3;
+  ctx.fill();
+  ctx.globalAlpha = 1;
+  
+  // 关卡编号/名称
+  ctx.fillStyle = isUnlocked ? '#fff' : '#888';
+  ctx.font = `bold ${Math.floor(nodeRadius * 0.6)}px sans-serif`;
+  if (type === 'entry') {
+    ctx.fillText('起', x, y);
+  } else {
+    ctx.fillText(String(index + 1), x, y);
+  }
+  
+  // 未解锁遮罩
+  if (!isUnlocked) {
+    ctx.beginPath();
+    ctx.arc(x, y, nodeRadius, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(0,0,0,0.4)';
+    ctx.fill();
+    
+    // 锁图标
+    ctx.fillStyle = '#666';
+    ctx.font = `${Math.floor(nodeRadius * 0.5)}px sans-serif`;
+    ctx.fillText('', x, y);
+  }
+  
+  // 难度指示（小星星在节点下方）
+  if (isUnlocked && level.difficulty) {
+    const stars = Math.min(level.difficulty, 3);
+    ctx.fillStyle = '#f7e358';
+    ctx.font = `${Math.floor(nodeRadius * 0.35)}px sans-serif`;
+    ctx.fillText(Array(stars).fill('').join(''), x, y + nodeRadius * 1.5);
+  }
 }
 
 /** 处理分支选择页面点击 */
@@ -1095,7 +1061,7 @@ function handleBranchSelectTouch(x, y) {
   });
 }
 
-/** 处理关卡选择页面点击 */
+/** 处理关卡选择页面点击 - 横向卷轴地图 */
 function handleLevelSelectTouch(x, y) {
   // 返回按钮
   const backBtnW = W * 0.12;
@@ -1105,6 +1071,7 @@ function handleLevelSelectTouch(x, y) {
   
   if (x >= backBtnX && x <= backBtnX + backBtnW &&
       y >= backBtnY && y <= backBtnY + backBtnH) {
+    playSound('click');
     gameState = 'branchSelect';
     selectedBranch = null;
     return;
@@ -1113,54 +1080,45 @@ function handleLevelSelectTouch(x, y) {
   const branch = LEVELS_CONFIG[selectedBranch];
   if (!branch) return;
   
-  // 入口关卡点击
-  const entryY = H * 0.15;
-  const entryWidth = W * 0.5;
-  const entryX = W * 0.25;
-  const entry = branch.entry;
-  const cardW = entryWidth * 0.4;
-  const cardH = H * 0.13;
-  const cardX = entryX + (entryWidth - cardW) / 2;
+  // 入口关卡节点点击
+  const startX = W * 0.08;
+  const startY = H * 0.5;
+  const entryRadius = H * 0.06;
   const isEntryUnlocked = entryCompleted[selectedBranch] || unlockedLevels[selectedBranch]?.entry;
   
   if (isEntryUnlocked) {
-    const btnH = cardH * 0.2;
-    const btnY = entryY + cardH * 0.72;
-    if (x >= cardX + cardW * 0.25 && x <= cardX + cardW * 0.75 &&
-        y >= btnY && y <= btnY + btnH) {
-      currentLevel = entry.id;
-      currentLevelConfig = entry;
+    const dist = Math.sqrt((x - startX) ** 2 + (y - startY) ** 2);
+    if (dist <= entryRadius * 1.5) {
+      playSound('click');
+      currentLevel = branch.entry.id;
+      currentLevelConfig = branch.entry;
       currentLineId = null;
       startLevel();
       return;
     }
   }
   
-  // 三条线路关卡点击
-  const lineY = entryY + H * 0.17;
-  const lines = branch.lines;
-  const lineH = H * 0.28;
-  const lineGap = H * 0.015;
-  const lineWidth = W * 0.94;
-  const lineStartX = W * 0.03;
+  // 三条线路关卡节点点击
+  const branchPointX = startX + W * 0.12;
+  const levelSpacing = W * 0.18;
+  const lineOffsets = [H * 0.25, H * 0.5, H * 0.75];
+  const levelRadius = H * 0.05;
+  const lineStartX = branchPointX + W * 0.1;
   
-  lines.forEach((line, lineIdx) => {
-    const lineCardY = lineY + lineIdx * (lineH + lineGap);
-    const levelStartX = lineStartX + lineWidth * 0.14;
-    const levelCardW = lineWidth * 0.25;
-    const levelCardH = lineH * 0.85;
-    const levelGap = lineWidth * 0.015;
+  // 使用 for 循环以便正确跳出
+  for (let lineIdx = 0; lineIdx < branch.lines.length; lineIdx++) {
+    const line = branch.lines[lineIdx];
+    const baseY = lineOffsets[lineIdx];
     
-    line.levels.forEach((level, levelIdx) => {
-      const levelCardX = levelStartX + levelIdx * (levelCardW + levelGap);
-      const levelCardY = lineCardY + lineH * 0.08;
+    for (let levelIdx = 0; levelIdx < line.levels.length; levelIdx++) {
+      const level = line.levels[levelIdx];
+      const nodeX = lineStartX + levelIdx * levelSpacing;
       const isUnlocked = unlockedLevels[selectedBranch]?.[line.id]?.includes(level.id);
       
       if (isUnlocked) {
-        const btnH = levelCardH * 0.12;
-        const btnY = levelCardY + levelCardH * 0.78;
-        if (x >= levelCardX + levelCardW * 0.2 && x <= levelCardX + levelCardW * 0.8 &&
-            y >= btnY && y <= btnY + btnH) {
+        const dist = Math.sqrt((x - nodeX) ** 2 + (y - baseY) ** 2);
+        if (dist <= levelRadius * 1.5) {
+          playSound('click');
           selectedLine = line.id;
           currentLevel = level.id;
           currentLevelConfig = level;
@@ -1169,8 +1127,8 @@ function handleLevelSelectTouch(x, y) {
           return;
         }
       }
-    });
-  });
+    }
+  }
 }
 
 /** 绘制卡牌 */
