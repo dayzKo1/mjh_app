@@ -1,31 +1,117 @@
 /**
- * 关卡选择页面 - 包了个包主题
- * 支持关卡解锁机制：通关后解锁下一关
+ * 关卡选择页面 - 麻将消消乐主题
+ * 支持：两个分支（入门/挑战），每个分支3条线路共8关
  */
 
 const { userApi } = require('../../services/api');
 
-// 关卡配置 - 面包主题名称
-const LEVELS_CONFIG = [
-  { id: 1, name: '吐司', difficulty: 1, iconCount: 6, layers: 3, color: '#84cc16' },
-  { id: 2, name: '甜甜圈', difficulty: 2, iconCount: 7, layers: 3, color: '#22c55e' },
-  { id: 3, name: '法棍', difficulty: 3, iconCount: 8, layers: 4, color: '#10b981' },
-  { id: 4, name: '松饼', difficulty: 4, iconCount: 9, layers: 4, color: '#14b8a6' },
-  { id: 5, name: '可颂', difficulty: 5, iconCount: 10, layers: 5, color: '#06b6d4' },
-  { id: 6, name: '牛角包', difficulty: 6, iconCount: 11, layers: 5, color: '#0ea5e9' },
-  { id: 7, name: '菠萝包', difficulty: 7, iconCount: 12, layers: 5, color: '#3b82f6' },
-  { id: 8, name: '丹麦包', difficulty: 8, iconCount: 13, layers: 6, color: '#8b5cf6' },
-  { id: 9, name: '欧包', difficulty: 9, iconCount: 14, layers: 6, color: '#a855f7' },
-  { id: 10, name: '大师包', difficulty: 10, iconCount: 15, layers: 7, color: '#ec4899' },
-];
+// 关卡配置 - 分支结构
+const LEVELS_CONFIG = {
+  // 入门模式 - 8关分布在3条线路
+  beginner: {
+    name: '入门模式',
+    color: '#22c55e',
+    lines: [
+      {
+        id: 'a',
+        name: '基础线',
+        color: '#84cc16',
+        levels: [
+          { id: 1, name: '入门', difficulty: 1, iconCount: 6, layers: 3 },
+          { id: 2, name: '初学', difficulty: 2, iconCount: 6, layers: 3 },
+          { id: 3, name: '熟练', difficulty: 3, iconCount: 7, layers: 3 },
+        ],
+      },
+      {
+        id: 'b',
+        name: '进防线',
+        color: '#10b981',
+        levels: [
+          { id: 4, name: '精通', difficulty: 4, iconCount: 7, layers: 4 },
+          { id: 5, name: '高手', difficulty: 5, iconCount: 8, layers: 4 },
+          { id: 6, name: '大师', difficulty: 6, iconCount: 8, layers: 4 },
+        ],
+      },
+      {
+        id: 'c',
+        name: '精通线',
+        color: '#14b8a6',
+        levels: [
+          { id: 7, name: '宗师', difficulty: 7, iconCount: 9, layers: 5 },
+          { id: 8, name: '王者', difficulty: 8, iconCount: 10, layers: 5 },
+        ],
+      },
+    ],
+  },
+  // 挑战模式 - 8关分布在3条线路，难度更高
+  challenge: {
+    name: '挑战模式',
+    color: '#8b5cf6',
+    lines: [
+      {
+        id: 'a',
+        name: '挑战线',
+        color: '#06b6d4',
+        levels: [
+          { id: 101, name: '挑战1', difficulty: 3, iconCount: 8, layers: 4 },
+          { id: 102, name: '挑战2', difficulty: 4, iconCount: 8, layers: 4 },
+          { id: 103, name: '挑战3', difficulty: 5, iconCount: 9, layers: 4 },
+        ],
+      },
+      {
+        id: 'b',
+        name: '高手线',
+        color: '#3b82f6',
+        levels: [
+          { id: 104, name: '高手1', difficulty: 6, iconCount: 9, layers: 5 },
+          { id: 105, name: '高手2', difficulty: 7, iconCount: 10, layers: 5 },
+          { id: 106, name: '高手3', difficulty: 8, iconCount: 10, layers: 5 },
+        ],
+      },
+      {
+        id: 'c',
+        name: '王者线',
+        color: '#a855f7',
+        levels: [
+          { id: 107, name: '王者1', difficulty: 9, iconCount: 11, layers: 6 },
+          { id: 108, name: '王者2', difficulty: 10, iconCount: 12, layers: 6 },
+        ],
+      },
+    ],
+  },
+};
+
+// 扁平化获取所有关卡
+function getAllLevels() {
+  const allLevels = [];
+  Object.values(LEVELS_CONFIG).forEach((branch) => {
+    branch.lines.forEach((line) => {
+      line.levels.forEach((level) => {
+        allLevels.push({
+          ...level,
+          branch: branch.name,
+          branchColor: branch.color,
+          lineName: line.name,
+          lineColor: line.color,
+        });
+      });
+    });
+  });
+  return allLevels;
+}
 
 Page({
   data: {
-    levels: [],
-    unlockedLevel: 1,
-    totalScore: 0,
+    currentBranch: 'beginner', // 当前选中的分支
+    branches: [
+      { id: 'beginner', name: '入门模式', color: '#22c55e' },
+      { id: 'challenge', name: '挑战模式', color: '#8b5cf6' },
+    ],
+    lines: [], // 当前分支的线路列表
+    allLevels: [], // 所有关卡（用于查找关卡配置）
     completedLevels: [],
     bestScores: {},
+    totalScore: 0,
     loading: true,
   },
 
@@ -38,20 +124,76 @@ Page({
   },
 
   /**
+   * 切换分支（入门/挑战）
+   */
+  switchBranch(e) {
+    const branchId = e.currentTarget.dataset.branch;
+    if (branchId === this.data.currentBranch) return;
+
+    this.setData({ currentBranch: branchId });
+    this.updateLinesData();
+  },
+
+  /**
+   * 更新线路数据（包含关卡状态）
+   */
+  updateLinesData() {
+    const branch = LEVELS_CONFIG[this.data.currentBranch];
+    if (!branch) return;
+
+    const { completedLevels, bestScores } = this.data;
+
+    const lines = branch.lines.map((line) => {
+      const levels = line.levels.map((level) => {
+        const isCompleted = completedLevels.includes(level.id);
+        const bestScore = bestScores[level.id] || 0;
+
+        // 解锁条件：第一关默认解锁，或上一关已通关（同分支内）
+        let isUnlocked = false;
+        if (level.id === 1 || level.id === 101) {
+          isUnlocked = true;
+        } else {
+          // 检查同分支内上一关是否通关
+          const prevId = level.id <= 8 ? level.id - 1 : level.id - 1;
+          isUnlocked = completedLevels.includes(prevId);
+        }
+
+        // 计算星级
+        let stars = 0;
+        if (isCompleted) {
+          stars = 1;
+          if (bestScore >= 30) stars = 2;
+          if (bestScore >= 50) stars = 3;
+        }
+
+        return {
+          ...level,
+          isUnlocked,
+          isCompleted,
+          bestScore,
+          stars,
+          lineColor: line.color,
+        };
+      });
+
+      return {
+        ...line,
+        levels,
+      };
+    });
+
+    this.setData({ lines });
+  },
+
+  /**
    * 加载用户进度数据
    */
   async loadUserProgress() {
     const app = getApp();
     const userId = app.globalData.userId;
 
-    // 初始化关卡列表 - 第一关默认解锁
-    let levels = LEVELS_CONFIG.map(level => ({
-      ...level,
-      isUnlocked: level.id === 1,
-      isCompleted: false,
-      bestScore: 0,
-      stars: 0,
-    }));
+    // 初始化所有关卡配置
+    const allLevels = getAllLevels();
 
     if (userId) {
       try {
@@ -62,45 +204,33 @@ Page({
         const bestScores = progress.bestScores || {};
         let totalScore = 0;
 
-        // 处理关卡状态
-        levels = levels.map((level) => {
-          const isCompleted = completedLevels.includes(level.id);
-          const bestScore = bestScores[level.id] || 0;
-          totalScore += bestScore;
-          
-          // 解锁条件：第一关默认解锁，或上一关已通关
-          const prevCompleted = level.id === 1 || completedLevels.includes(level.id - 1);
+        // 计算总分
+        Object.values(bestScores).forEach((score) => {
+          totalScore += score || 0;
+        });
 
-          // 计算星级
-          let stars = 0;
-          if (isCompleted) {
-            stars = 1;
-            if (bestScore >= 30) stars = 2;
-            if (bestScore >= 50) stars = 3;
+        this.setData(
+          {
+            allLevels,
+            completedLevels,
+            bestScores,
+            totalScore,
+            loading: false,
+          },
+          () => {
+            this.updateLinesData();
           }
-
-          return {
-            ...level,
-            isUnlocked: prevCompleted,
-            isCompleted,
-            bestScore,
-            stars,
-          };
-        });
-
-        this.setData({
-          levels,
-          completedLevels,
-          bestScores,
-          totalScore,
-          loading: false,
-        });
+        );
       } catch (error) {
         console.warn('加载进度失败:', error.message);
-        this.setData({ levels, loading: false });
+        this.setData({ allLevels, loading: false }, () => {
+          this.updateLinesData();
+        });
       }
     } else {
-      this.setData({ levels, loading: false });
+      this.setData({ allLevels, loading: false }, () => {
+        this.updateLinesData();
+      });
     }
   },
 
@@ -109,16 +239,31 @@ Page({
    */
   onLevelTap(e) {
     const levelId = e.currentTarget.dataset.id;
-    const level = this.data.levels.find(l => l.id === levelId);
+    const level = this.data.allLevels.find((l) => l.id === levelId);
 
-    if (!level || !level.isUnlocked) {
+    if (!level) {
+      tt.showToast({ title: '关卡不存在', icon: 'none' });
+      return;
+    }
+
+    // 检查解锁状态
+    const { completedLevels } = this.data;
+    let isUnlocked = false;
+    if (levelId === 1 || levelId === 101) {
+      isUnlocked = true;
+    } else {
+      const prevId = levelId <= 8 ? levelId - 1 : levelId - 1;
+      isUnlocked = completedLevels.includes(prevId);
+    }
+
+    if (!isUnlocked) {
       tt.showToast({ title: '关卡未解锁', icon: 'none' });
       return;
     }
 
-    // 进入游戏页面
+    // 进入游戏页面，传递关卡参数
     tt.navigateTo({
-      url: `/pages/game/game?level=${levelId}`,
+      url: `/pages/game/game?level=${levelId}&iconCount=${level.iconCount}&layers=${level.layers}`,
     });
   },
 

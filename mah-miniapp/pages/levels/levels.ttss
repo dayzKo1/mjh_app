@@ -1,9 +1,9 @@
-/* 关卡选择页面样式 - 包了个包主题 */
+/* 关卡选择页面样式 - 麻将消消乐主题 */
 
 .container {
   width: 100vw;
   height: 100vh;
-  background: linear-gradient(180deg, #fef3c7 0%, #fde68a 40%, #fcd34d 70%, #f59e0b 100%);
+  background: linear-gradient(180deg, #1a472a 0%, #2d5a3f 40%, #3d6b4f 70%, #1a472a 100%);
   display: flex;
   flex-direction: column;
   padding: 16rpx 24rpx;
@@ -17,9 +17,9 @@
   justify-content: space-between;
   align-items: center;
   padding: 12rpx 20rpx;
-  background: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.85);
   border-radius: 24rpx;
-  box-shadow: 0 4rpx 16rpx rgba(245, 158, 11, 0.2);
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.2);
 }
 
 .header-left {
@@ -32,11 +32,11 @@
   width: 48rpx;
   height: 48rpx;
   border-radius: 12rpx;
-  background: linear-gradient(145deg, #fcd34d, #f59e0b);
+  background: linear-gradient(145deg, #2d5a3f, #1a472a);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2rpx 8rpx rgba(245, 158, 11, 0.3);
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.3);
 }
 
 .logo-icon-text {
@@ -48,8 +48,8 @@
 .title {
   font-size: 32rpx;
   font-weight: 900;
-  color: #92400e;
-  text-shadow: 0 1rpx 0 rgba(255, 255, 255, 0.5);
+  color: #fff;
+  text-shadow: 0 1rpx 0 rgba(0, 0, 0, 0.5);
 }
 
 .header-right {
@@ -62,165 +62,213 @@
   align-items: center;
   gap: 8rpx;
   padding: 8rpx 16rpx;
-  background: linear-gradient(145deg, #fff8dc, #ffe4b5);
+  background: linear-gradient(145deg, #fff, #f0f5f0);
   border-radius: 20rpx;
-  box-shadow: 0 2rpx 8rpx rgba(245, 158, 11, 0.2);
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.15);
 }
 
 .score-label {
   font-size: 16rpx;
-  color: #a16207;
+  color: #1a472a;
 }
 
 .score-value {
   font-size: 20rpx;
   font-weight: 700;
-  color: #92400e;
+  color: #0d2818;
 }
 
-/* ===== 关卡网格 ===== */
+/* ===== 分支选择 ===== */
+.branch-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 16rpx;
+  padding: 16rpx 0;
+  margin-top: 12rpx;
+}
+
+.branch-tab {
+  padding: 12rpx 32rpx;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 24rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+}
+
+.branch-tab.active {
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.2);
+  transform: translateY(-2rpx);
+}
+
+.branch-tab-text {
+  font-size: 28rpx;
+  font-weight: 700;
+}
+
+/* ===== 关卡滚动区域 ===== */
 .levels-container {
   flex: 1;
+  padding: 12rpx 0;
+  overflow: hidden;
+}
+
+.lines-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+  padding: 8rpx 16rpx;
+}
+
+/* ===== 线路区块 ===== */
+.line-section {
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 20rpx;
+  padding: 16rpx;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.15);
+}
+
+.line-header {
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 20rpx;
+  gap: 12rpx;
+  padding-bottom: 12rpx;
+  margin-bottom: 12rpx;
+  box-shadow: 0 2rpx 0 rgba(255, 255, 255, 0.3);
 }
 
-.levels-grid {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  grid-template-rows: repeat(2, 1fr);
-  gap: 16rpx;
-  width: 100%;
-  max-width: 95%;
+.line-indicator {
+  width: 32rpx;
+  height: 32rpx;
+  border-radius: 8rpx;
+  box-shadow: 0 2rpx 6rpx rgba(0, 0, 0, 0.2);
 }
 
-.level-item {
+.line-name {
+  font-size: 24rpx;
+  font-weight: 700;
+  color: #fff;
+}
+
+/* ===== 关卡行 ===== */
+.levels-row {
+  display: flex;
+  gap: 12rpx;
+  flex-wrap: wrap;
+}
+
+.level-card {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 16rpx 12rpx;
+  padding: 12rpx 16rpx;
+  min-width: 90rpx;
   background: rgba(255, 255, 255, 0.6);
-  border-radius: 20rpx;
-  box-shadow: 
-    0 4rpx 16rpx rgba(245, 158, 11, 0.15),
-    0 2rpx 8rpx rgba(0, 0, 0, 0.05);
+  border-radius: 16rpx;
+  box-shadow: 0 3rpx 12rpx rgba(0, 0, 0, 0.15);
   transition: all 0.2s ease;
   position: relative;
 }
 
-.level-item.unlocked {
-  background: linear-gradient(170deg, #fffef9 0%, #faf5e8 40%, #fef3c7 100%);
-  box-shadow: 
-    0 6rpx 20rpx rgba(245, 158, 11, 0.25),
-    0 3rpx 10rpx rgba(0, 0, 0, 0.08),
-    inset 0 1rpx 0 rgba(255, 255, 255, 0.8);
+.level-card.unlocked {
+  background: linear-gradient(170deg, #fffef9 0%, #faf5e8 40%, #fff 100%);
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.2), inset 0 1rpx 0 rgba(255, 255, 255, 0.8);
 }
 
-.level-item.unlocked:active {
+.level-card.unlocked:active {
   transform: scale(0.95);
-  box-shadow: 0 2rpx 10rpx rgba(245, 158, 11, 0.2);
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.15);
 }
 
-.level-item.locked {
+.level-card.locked {
   opacity: 0.5;
-  background: rgba(156, 163, 175, 0.2);
+  background: rgba(156, 163, 175, 0.3);
 }
 
-/* ===== 关卡编号 - 面包形状 ===== */
+/* ===== 关卡编号 ===== */
 .level-number {
-  width: 52rpx;
-  height: 52rpx;
-  border-radius: 16rpx;
+  width: 44rpx;
+  height: 44rpx;
+  border-radius: 12rpx;
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-bottom: 10rpx;
-  box-shadow: 
-    0 3rpx 10rpx rgba(0, 0, 0, 0.2),
-    inset 0 2rpx 0 rgba(255, 255, 255, 0.3);
+  margin-bottom: 8rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.2), inset 0 1rpx 0 rgba(255, 255, 255, 0.3);
 }
 
 .level-num-text {
-  font-size: 26rpx;
+  font-size: 22rpx;
   font-weight: 900;
   color: #fff;
 }
 
-/* ===== 关卡信息 ===== */
-.level-info {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4rpx;
-}
-
+/* ===== 关卡名称 ===== */
 .level-name {
-  font-size: 20rpx;
+  font-size: 18rpx;
   font-weight: 700;
-  color: #92400e;
+  color: #1a472a;
+  text-align: center;
 }
 
-.level-item.locked .level-name {
+.level-card.locked .level-name {
   color: #6b7280;
 }
 
+/* ===== 星级评价 ===== */
 .level-stars {
   display: flex;
   gap: 2rpx;
+  margin-top: 4rpx;
 }
 
 .star {
-  font-size: 18rpx;
+  font-size: 16rpx;
   color: rgba(156, 163, 175, 0.4);
 }
 
 .star-filled {
-  color: #f59e0b;
+  color: #22c55e;
 }
 
+/* ===== 最高分 ===== */
 .level-score {
-  font-size: 16rpx;
-  color: #b45309;
-  font-weight: 600;
-}
-
-.level-locked-info {
   font-size: 14rpx;
-  color: #6b7280;
+  color: #0d2818;
+  font-weight: 600;
+  margin-top: 2rpx;
 }
 
-/* ===== 锁定图标 ===== */
-.lock-icon {
+/* ===== 锁定覆盖层 ===== */
+.lock-overlay {
   position: absolute;
-  right: 8rpx;
-  top: 8rpx;
-  width: 24rpx;
-  height: 24rpx;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   display: flex;
-  justify-content: center;
   align-items: center;
-  background: rgba(156, 163, 175, 0.3);
-  border-radius: 8rpx;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 16rpx;
 }
 
 .lock-text {
-  font-size: 14rpx;
+  font-size: 24rpx;
   font-weight: 700;
-  color: #6b7280;
+  color: rgba(255, 255, 255, 0.8);
 }
 
 /* ===== 已通关标记 ===== */
-.completed-mark {
+.completed-badge {
   position: absolute;
-  left: 8rpx;
-  top: 8rpx;
-  padding: 3rpx 8rpx;
-  background: linear-gradient(180deg, #22c55e, #16a34a);
-  border-radius: 10rpx;
-  box-shadow: 0 2rpx 6rpx rgba(34, 197, 94, 0.3);
+  top: 4rpx;
+  right: 4rpx;
+  padding: 4rpx 8rpx;
+  background: #22c55e;
+  border-radius: 8rpx;
+  box-shadow: 0 1rpx 4rpx rgba(0, 0, 0, 0.2);
 }
 
 .completed-text {
@@ -233,37 +281,40 @@
 .footer {
   display: flex;
   justify-content: center;
-  gap: 24rpx;
-  padding: 12rpx;
+  gap: 40rpx;
+  padding: 16rpx 0;
+  margin-top: 12rpx;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 32rpx;
 }
 
 .nav-btn {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 8rpx;
-  padding: 12rpx 28rpx;
-  background: linear-gradient(180deg, #fff8dc, #ffe4b5);
-  border-radius: 24rpx;
-  box-shadow: 
-    0 4rpx 16rpx rgba(245, 158, 11, 0.25),
-    inset 0 1rpx 0 rgba(255, 255, 255, 0.8);
+  gap: 4rpx;
+  padding: 8rpx 24rpx;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 16rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
 }
 
 .nav-btn:active {
   transform: scale(0.95);
-  box-shadow: 0 2rpx 8rpx rgba(245, 158, 11, 0.2);
+  background: rgba(255, 255, 255, 0.8);
 }
 
 .nav-btn-icon {
-  font-size: 20rpx;
-  font-weight: 700;
-  color: #f59e0b;
+  font-size: 28rpx;
+  font-weight: 900;
+  color: #1a472a;
 }
 
 .nav-btn-text {
-  font-size: 22rpx;
-  font-weight: 700;
-  color: #92400e;
+  font-size: 16rpx;
+  font-weight: 600;
+  color: #2d5a3f;
 }
 
 /* ===== 加载提示 ===== */
@@ -273,11 +324,11 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(251, 191, 36, 0.9);
   display: flex;
-  justify-content: center;
   align-items: center;
-  z-index: 1000;
+  justify-content: center;
+  background: rgba(26, 71, 42, 0.9);
+  z-index: 100;
 }
 
 .loading-content {
@@ -285,23 +336,27 @@
   flex-direction: column;
   align-items: center;
   gap: 16rpx;
+  padding: 32rpx 48rpx;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 24rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.3);
 }
 
 .loading-spinner {
   width: 48rpx;
   height: 48rpx;
-  border: 4rpx solid rgba(255, 255, 255, 0.3);
-  border-top-color: #fff;
   border-radius: 50%;
-  animation: spin 0.8s linear infinite;
+  background: conic-gradient(#22c55e 0deg 270deg, transparent 270deg 360deg);
+  animation: spin 1s linear infinite;
 }
 
 @keyframes spin {
+  from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
 }
 
-.loading-mask .loading-text {
-  font-size: 24rpx;
+.loading-text {
+  font-size: 18rpx;
   font-weight: 600;
-  color: #fff;
+  color: #1a472a;
 }

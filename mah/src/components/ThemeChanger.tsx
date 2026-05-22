@@ -5,11 +5,13 @@ import { fishermanTheme } from '../themes/fisherman';
 import { jinlunTheme } from '../themes/jinlun';
 import { ikunTheme } from '../themes/ikun';
 import { pddTheme } from '../themes/pdd';
+import { mahjongTheme } from '../themes/mahjong';
 import { getDefaultTheme } from '../themes/default';
 import { Theme } from '../themes/interface';
 import WxQrCode from './WxQrCode';
 
 const BuiltinThemes = [
+    mahjongTheme, // 麻将主题放在第一位
     getDefaultTheme(),
     fishermanTheme,
     jinlunTheme,

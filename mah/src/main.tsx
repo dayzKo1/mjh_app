@@ -12,6 +12,7 @@ import {
     wrapThemeDefaultSounds,
 } from './utils';
 import { getDefaultTheme } from './themes/default';
+import { mahjongTheme } from './themes/mahjong';
 import { Theme } from './themes/interface';
 
 // react渲染
@@ -105,5 +106,5 @@ if (customThemeIdFromPath) {
             });
     }
 } else {
-    successTrans(getDefaultTheme());
+    successTrans(mahjongTheme); // 默认使用麻将主题
 }

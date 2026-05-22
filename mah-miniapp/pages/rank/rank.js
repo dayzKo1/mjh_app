@@ -77,9 +77,6 @@ Page({
    * @returns {string} 排名显示内容
    */
   getRankIcon(rank) {
-    if (rank === 1) return '🥇';
-    if (rank === 2) return '🥈';
-    if (rank === 3) return '🥉';
     return String(rank);
   },
 });

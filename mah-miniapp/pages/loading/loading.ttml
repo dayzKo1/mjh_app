@@ -1,11 +1,11 @@
-<!-- 开屏加载页面 - 包了个包主题 -->
+<!-- 开屏加载页面 - 麻将消消乐主题 -->
 <view class="loading-container">
   <!-- 游戏Logo -->
   <view class="logo-container">
     <view class="logo-icon">
-      <text class="logo-emoji">B</text>
+      <text class="logo-emoji">M</text>
     </view>
-    <text class="logo-title">包了个包</text>
+    <text class="logo-title">麻将消消乐</text>
     <text class="logo-subtitle">麻将三消益智游戏</text>
   </view>
 
@@ -21,10 +21,10 @@
     </view>
   </view>
 
-  <!-- 游戏提示 - 面包主题 -->
+  <!-- 游戏提示 -->
   <view class="tips-area" tt:if="{{showTip}}">
     <view class="tip-icon">
-      <text class="tip-emoji">* </text>
+      <text class="tip-emoji">*</text>
     </view>
     <text class="tip-content">{{tips[tipIndex]}}</text>
   </view>

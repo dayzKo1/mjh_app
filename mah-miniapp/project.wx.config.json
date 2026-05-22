@@ -1,0 +1,15 @@
+{
+  "miniprogramRoot": "./",
+  "setting": {
+    "es6": true,
+    "postcss": true,
+    "minified": true,
+    "newFeature": true
+  },
+  "compileType": "game",
+  "appid": "your-wechat-appid",
+  "projectname": "mahjong-match",
+  "simulatorType": "wechat",
+  "simulatorPluginLibVersion": {},
+  "condition": {}
+}

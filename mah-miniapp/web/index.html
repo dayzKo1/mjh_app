@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <title>麻将消消乐</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #1a472a;
+      touch-action: none;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    canvas {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+    }
+    /* 横屏提示 */
+    .rotate-tip {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.9);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      color: #fff;
+      font-size: 18px;
+      z-index: 9999;
+    }
+    @media (orientation: portrait) {
+      .rotate-tip {
+        display: flex;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- 横屏提示 -->
+  <div class="rotate-tip">
+    <div style="text-align: center;">
+      <p>请横屏游玩</p>
+      <p style="margin-top: 10px; font-size: 14px; color: #888;">Rotate your device for best experience</p>
+    </div>
+  </div>
+  
+  <!-- 游戏容器 -->
+  <div id="game-container"></div>
+  
+  <!-- 游戏脚本 -->
+  <script>
+    // Web 环境初始化
+    window.onload = function() {
+      // 模拟小游戏环境 - 创建全局对象
+      window.tt = null; // 不存在，使用 platform 适配器
+      
+      // 加载游戏
+      loadGame();
+    };
+    
+    function loadGame() {
+      // 动态加载游戏模块
+      // 注意：需要构建工具打包或使用 ES modules
+      const gameContainer = document.getElementById('game-container');
+      
+      // 简化方案：直接在浏览器运行
+      // 实际打包时需要使用构建工具
+      console.log('麻将消消乐 - Web 版本');
+      console.log('请使用构建工具打包后运行');
+    }
+  </script>
+</body>
+</html>

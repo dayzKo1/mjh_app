@@ -10,12 +10,10 @@
   openId: string,           // 抖音openId
   nickName: string,         // 昵称
   avatarUrl: string,        // 头像URL
-  userType: 'A' | 'B',      // 用户类型（A:可提现, B:不可提现）
+  userType: 'A' | 'B',      // 用户类型
   inviterId: string,        // 邀请人ID
   level: number,            // 最高关卡
   score: number,            // 总得分
-  commission: number,       // 佣金余额（元）
-  totalWithdraw: number,    // 累计提现（元）
   createTime: Date,         // 创建时间
   updateTime: Date,         // 更新时间
   lastLoginTime: Date       // 最后登录时间
@@ -27,7 +25,6 @@
 - `userType`: 普通索引
 - `inviterId`: 普通索引
 - `score`: 降序索引（排行榜）
-- `commission`: 降序索引（排行榜）
 
 ---
 
@@ -50,28 +47,7 @@
 
 ---
 
-### 3. withdraw_records（提现记录表）
-
-```javascript
-{
-  _id: string,              // 记录ID（自动生成）
-  userId: string,           // 用户ID
-  amount: number,           // 提现金额（元）
-  status: 'pending' | 'approved' | 'rejected', // 状态
-  applyTime: Date,          // 申请时间
-  processTime: Date,        // 处理时间
-  reason: string            // 拒绝原因
-}
-```
-
-**索引设计：**
-- `userId`: 普通索引
-- `status`: 普通索引
-- `applyTime`: 降序索引
-
----
-
-### 4. ad_records（广告记录表）
+### 3. ad_records（广告记录表）
 
 ```javascript
 {
@@ -90,6 +66,25 @@
 
 ---
 
+### 4. user_progress（用户关卡进度表）
+
+```javascript
+{
+  _id: string,              // 记录ID（自动生成）
+  userId: string,           // 用户ID
+  completedLevels: number[], // 已通关关卡ID列表
+  bestScores: Object,       // 各关卡最高分 { levelId: score }
+  unlockedLevel: number,    // 已解锁的最高关卡
+  createTime: Date,         // 创建时间
+  updateTime: Date          // 更新时间
+}
+```
+
+**索引设计：**
+- `userId`: 唯一索引
+
+---
+
 ## 🔧 数据库初始化脚本
 
 ```javascript
@@ -103,14 +98,11 @@ await db.createCollection('users');
 // 创建 game_records 表
 await db.createCollection('game_records');
 
-// 创建 withdraw_records 表
-await db.createCollection('withdraw_records');
-
 // 创建 ad_records 表
 await db.createCollection('ad_records');
 
-// 创建 commission_records 表（分佣记录）
-await db.createCollection('commission_records');
+// 创建 user_progress 表（用户关卡进度）
+await db.createCollection('user_progress');
 ```
 
 ---
@@ -167,18 +159,6 @@ const result = await db.collection('users')
   .count();
 ```
 
-### 4. 获取待审核提现
-
-```javascript
-const result = await db.collection('withdraw_records')
-  .where({
-    status: 'pending'
-  })
-  .orderBy('applyTime', 'asc')
-  .limit(100)
-  .get();
-```
-
 ---
 
 ## 🔒 数据安全规则
@@ -193,15 +173,6 @@ const result = await db.collection('withdraw_records')
 ```
 
 ### game_records 表
-
-```json
-{
-  "read": "auth.openid == doc.userId",
-  "write": "auth.openid == doc.userId"
-}
-```
-
-### withdraw_records 表
 
 ```json
 {

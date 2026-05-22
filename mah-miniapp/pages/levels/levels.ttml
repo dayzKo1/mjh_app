@@ -1,12 +1,12 @@
-<!-- 关卡选择页面 - 包了个包主题 -->
+<!-- 关卡选择页面 - 麻将消消乐主题 -->
 <view class="container">
   <!-- 顶部标题栏 -->
   <view class="header">
     <view class="header-left">
       <view class="logo-mini">
-        <text class="logo-icon-text">B</text>
+        <text class="logo-icon-text">M</text>
       </view>
-      <text class="title">包了个包</text>
+      <text class="title">麻将消消乐</text>
     </view>
     <view class="header-right">
       <view class="score-badge">
@@ -16,53 +16,71 @@
     </view>
   </view>
 
-  <!-- 关卡网格 -->
-  <view class="levels-container">
-    <view class="levels-grid">
-      <view
-        tt:for="{{levels}}"
-        tt:key="id"
-        class="level-item {{item.isUnlocked ? 'unlocked' : 'locked'}}"
-        data-id="{{item.id}}"
-        bindtap="onLevelTap"
-      >
-        <!-- 关卡编号 - 面包形状 -->
-        <view class="level-number" style="background: {{item.isUnlocked ? item.color : '#9ca3af'}}">
-          <text class="level-num-text">{{item.id}}</text>
+  <!-- 分支选择（入门/挑战） -->
+  <view class="branch-tabs">
+    <view
+      tt:for="{{branches}}"
+      tt:key="id"
+      class="branch-tab {{currentBranch === item.id ? 'active' : ''}}"
+      data-branch="{{item.id}}"
+      bindtap="switchBranch"
+    >
+      <text class="branch-tab-text" style="color: {{currentBranch === item.id ? item.color : '#9ca3af'}}">{{item.name}}</text>
+    </view>
+  </view>
+
+  <!-- 线路和关卡 -->
+  <scroll-view class="levels-container" scroll-y="true">
+    <view class="lines-wrapper">
+      <view tt:for="{{lines}}" tt:key="id" class="line-section">
+        <!-- 线路标题 -->
+        <view class="line-header">
+          <view class="line-indicator" style="background: {{item.color}}"></view>
+          <text class="line-name">{{item.name}}</text>
         </view>
 
-        <!-- 关卡信息 -->
-        <view class="level-info">
-          <text class="level-name">{{item.name}}</text>
-          
-          <!-- 星级评价 - 面包星 -->
-          <view class="level-stars" tt:if="{{item.isCompleted}}">
-            <text class="star {{item.stars >= 1 ? 'star-filled' : ''}}">* </text>
-            <text class="star {{item.stars >= 2 ? 'star-filled' : ''}}">* </text>
-            <text class="star {{item.stars >= 3 ? 'star-filled' : ''}}">* </text>
+        <!-- 该线路的关卡 -->
+        <view class="levels-row">
+          <view
+            tt:for="{{item.levels}}"
+            tt:for-item="level"
+            tt:key="id"
+            class="level-card {{level.isUnlocked ? 'unlocked' : 'locked'}}"
+            data-id="{{level.id}}"
+            bindtap="onLevelTap"
+          >
+            <!-- 关卡编号 -->
+            <view class="level-number" style="background: {{level.isUnlocked ? level.lineColor : '#6b7280'}}">
+              <text class="level-num-text">{{level.id <= 8 ? level.id : level.id - 100}}</text>
+            </view>
+
+            <!-- 关卡名称 -->
+            <text class="level-name">{{level.name}}</text>
+
+            <!-- 星级评价 -->
+            <view class="level-stars" tt:if="{{level.isCompleted}}">
+              <text class="star {{level.stars >= 1 ? 'star-filled' : ''}}">*</text>
+              <text class="star {{level.stars >= 2 ? 'star-filled' : ''}}">*</text>
+              <text class="star {{level.stars >= 3 ? 'star-filled' : ''}}">*</text>
+            </view>
+
+            <!-- 最高分 -->
+            <text class="level-score" tt:if="{{level.isCompleted}}">{{level.bestScore}}分</text>
+
+            <!-- 锁定提示 -->
+            <view class="lock-overlay" tt:if="{{!level.isUnlocked}}">
+              <text class="lock-text">X</text>
+            </view>
+
+            <!-- 已通关标记 -->
+            <view class="completed-badge" tt:if="{{level.isCompleted}}">
+              <text class="completed-text">OK</text>
+            </view>
           </view>
-
-          <!-- 最高分 -->
-          <text class="level-score" tt:if="{{item.isCompleted}}">{{item.bestScore}}分</text>
-
-          <!-- 锁定提示 -->
-          <text class="level-locked-info" tt:if="{{!item.isUnlocked}}">
-            未解锁
-          </text>
-        </view>
-
-        <!-- 锁定图标 -->
-        <view class="lock-icon" tt:if="{{!item.isUnlocked}}">
-          <text class="lock-text">X</text>
-        </view>
-
-        <!-- 已通关标记 -->
-        <view class="completed-mark" tt:if="{{item.isCompleted}}">
-          <text class="completed-text">通关</text>
         </view>
       </view>
     </view>
-  </view>
+  </scroll-view>
 
   <!-- 底部导航 -->
   <view class="footer">

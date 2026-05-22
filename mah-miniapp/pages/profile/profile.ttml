@@ -18,28 +18,8 @@
         <image class="edit-icon" src="/images/icons/edit_icon.png" mode="aspectFit" bindtap="onEditNickname" />
       </view>
       <view class="user-type-tag {{userType === 'A' ? 'type-a' : 'type-b'}}">
-        {{userType === 'A' ? '可提现' : '不可提现'}}
+        {{userType === 'A' ? 'A类用户' : 'B类用户'}}
       </view>
-    </view>
-  </view>
-
-  <!-- 资产卡片 -->
-  <view class="asset-card">
-    <view class="asset-row">
-      <view class="asset-item asset-main">
-        <text class="asset-label">佣金余额</text>
-        <text class="asset-value">{{commission}}</text>
-        <text class="asset-unit">元</text>
-      </view>
-      <view class="asset-divider"></view>
-      <view class="asset-item">
-        <text class="asset-label">累计提现</text>
-        <text class="asset-value-sm">{{totalWithdraw}}</text>
-        <text class="asset-unit-sm">元</text>
-      </view>
-    </view>
-    <view tt:if="{{userType === 'A'}}" class="withdraw-btn" bindtap="onWithdraw">
-      立即提现
     </view>
   </view>
 
@@ -83,11 +63,6 @@
       <image class="feature-icon-img" src="/images/icons/feature_service.png" mode="aspectFit" />
       <text class="feature-text">客服</text>
     </view>
-  </view>
-
-  <!-- 底部提示 -->
-  <view tt:if="{{userType === 'B'}}" class="tip-text">
-    邀请好友成为A类用户，即可提现佣金
   </view>
 
 </view>

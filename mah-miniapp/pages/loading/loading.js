@@ -1,17 +1,17 @@
 /**
- * 开屏加载页面 - 包了个包主题
+ * 开屏加载页面 - 麻将消消乐主题
  * 显示加载动画，预加载资源后跳转到关卡选择
  */
 
 Page({
   data: {
     loadingProgress: 0,
-    loadingText: '正在准备面团...',
+    loadingText: '正在洗牌...',
     showTip: false,
     tipIndex: 0,
   },
 
-  // 面包主题提示文案
+  // 麻将主题提示文案
   tips: [
     '点击相同的三张麻将牌即可消除',
     '暂存槽最多容纳7张牌，满了就失败',
@@ -31,15 +31,15 @@ Page({
     if (this._tipTimer) clearInterval(this._tipTimer);
   },
 
-  /** 启动加载动画 - 面包主题 */
+  /** 启动加载动画 - 麻将主题 */
   startLoading() {
     const loadingTexts = [
-      { progress: 0, text: '正在准备面团...' },
-      { progress: 20, text: '揉制麻将牌...' },
-      { progress: 40, text: '烘焙关卡数据...' },
-      { progress: 60, text: '撒上道具配料...' },
+      { progress: 0, text: '正在洗牌...' },
+      { progress: 20, text: '排列麻将牌...' },
+      { progress: 40, text: '加载关卡数据...' },
+      { progress: 60, text: '准备道具系统...' },
       { progress: 80, text: '检查游戏引擎...' },
-      { progress: 95, text: '即将开炉...' },
+      { progress: 95, text: '即将开局...' },
       { progress: 100, text: '加载完成!' },
     ];
 

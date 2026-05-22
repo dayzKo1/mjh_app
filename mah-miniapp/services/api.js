@@ -1,16 +1,32 @@
 /**
- * 抖音云开发调用服务
- * 使用 tt.createCloud + callContainer API 调用抖音云函数服务
- * 所有业务逻辑统一部署在 blgb 云函数服务中，通过 module + action 路由
+ * 跨平台云开发调用服务
+ * 支持：
+ * - 抖音小游戏：tt.createCloud + callContainer API
+ * - 微信小游戏：wx.cloud + cloud.callFunction API
+ * - H5/Web：HTTP API 或 BaaS 服务
+ * 所有业务逻辑统一部署在云函数服务中，通过 module + action 路由
  */
+
+const platform = require('../utils/platform');
 
 /**
  * 云环境配置
- * serviceId 为抖音云控制台创建的云函数服务ID
+ * 不同平台使用不同的配置
  */
 const CLOUD_CONFIG = {
-  envID: "env-JXqPdUfI6j",
-  serviceId: "1m11ax5741bfv",
+  // 抖音云
+  douyin: {
+    envID: "env-JXqPdUfI6j",
+    serviceId: "1m11ax5741bfv",
+  },
+  // 微信云（需要单独配置）
+  wechat: {
+    env: "your-wechat-env-id",
+  },
+  // Web 环境 - HTTP API 地址
+  web: {
+    baseUrl: "https://your-api-server.com/api",
+  }
 };
 
 /** 云实例缓存 */
@@ -18,17 +34,17 @@ let cloudInstance = null;
 
 /**
  * 获取云实例
- * @returns {Object} 云实例
+ * @returns {Object|null} 云实例（Web 环境返回 null）
  */
 function getCloudInstance() {
-  if (!tt.createCloud) {
-    throw new Error("当前环境不支持云开发");
+  if (platform.type === 'web') {
+    return null; // Web 环境使用 HTTP API
   }
 
   if (!cloudInstance) {
-    cloudInstance = tt.createCloud({
-      envID: CLOUD_CONFIG.envID,
-      serviceID: CLOUD_CONFIG.serviceId,
+    cloudInstance = platform.createCloud({
+      envID: CLOUD_CONFIG.douyin.envID,
+      serviceID: CLOUD_CONFIG.douyin.serviceId,
     });
   }
 
@@ -36,37 +52,89 @@ function getCloudInstance() {
 }
 
 /**
- * 调用抖音云容器服务
+ * 调用云服务
  * @param {string} moduleName - 业务模块名称（user/game/withdraw/ad/admin）
  * @param {string} action - 操作名称
  * @param {Object} data - 业务参数
  * @returns {Promise<Object>} 返回结果
  */
 function callCloudFunction(moduleName, action, data = {}) {
+  // Web 环境 - 使用 HTTP API
+  if (platform.type === 'web') {
+    return callHttpApi(moduleName, action, data);
+  }
+
+  // 小游戏环境 - 使用云开发
+  return callMiniGameCloud(moduleName, action, data);
+}
+
+/**
+ * 小游戏云调用
+ */
+function callMiniGameCloud(moduleName, action, data = {}) {
   return new Promise((resolve, reject) => {
     const cloud = getCloudInstance();
+    
+    if (!cloud) {
+      reject(new Error("当前环境不支持云开发"));
+      return;
+    }
 
-    cloud.callContainer({
-      serviceId: CLOUD_CONFIG.serviceId,
-      path: "/",
-      init: {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: { module: moduleName, action, ...data },
-      },
-      success: (res) => {
-        if (res.statusCode === 200 && res.data) {
-          const result =
-            typeof res.data === "string" ? JSON.parse(res.data) : res.data;
-          resolve(result);
-        } else {
-          reject(new Error(`请求失败: ${res.statusCode}`));
-        }
-      },
-      fail: (err) => {
-        reject(new Error(err.errMsg || "请求失败"));
-      },
-    });
+    // 抖音云使用 callContainer
+    if (platform.type === 'douyin' && cloud.callContainer) {
+      cloud.callContainer({
+        serviceId: CLOUD_CONFIG.douyin.serviceId,
+        path: "/",
+        init: {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: { module: moduleName, action, ...data },
+        },
+        success: (res) => {
+          if (res.statusCode === 200 && res.data) {
+            const result = typeof res.data === "string" ? JSON.parse(res.data) : res.data;
+            resolve(result);
+          } else {
+            reject(new Error(`请求失败: ${res.statusCode}`));
+          }
+        },
+        fail: (err) => {
+          reject(new Error(err.errMsg || "请求失败"));
+        },
+      });
+    }
+    // 微信云使用 callFunction
+    else if (platform.type === 'wechat' && cloud.callFunction) {
+      cloud.callFunction({
+        name: 'blgb',
+        data: { module: moduleName, action, ...data },
+        success: (res) => {
+          resolve(res.result);
+        },
+        fail: (err) => {
+          reject(new Error(err.errMsg || "请求失败"));
+        },
+      });
+    }
+    else {
+      reject(new Error("不支持的云开发环境"));
+    }
+  });
+}
+
+/**
+ * Web 环境 HTTP API 调用
+ */
+function callHttpApi(moduleName, action, data = {}) {
+  return new Promise((resolve, reject) => {
+    fetch(`${CLOUD_CONFIG.web.baseUrl}/${moduleName}/${action}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    })
+    .then(res => res.json())
+    .then(result => resolve(result))
+    .catch(err => reject(new Error(err.message || "网络请求失败")));
   });
 }
 
@@ -177,27 +245,6 @@ const gameApi = {
 };
 
 /**
- * 提现相关API
- */
-const withdrawApi = {
-  /**
-   * 申请提现
-   * @param {string} userId - 用户ID
-   * @param {number} amount - 提现金额
-   */
-  apply: (userId, amount) =>
-    callCloudFunction("withdraw", "apply", { userId, amount }),
-
-  /**
-   * 获取提现记录
-   * @param {string} userId - 用户ID
-   * @param {number} limit - 数量限制
-   */
-  getRecords: (userId, limit = 50) =>
-    callCloudFunction("withdraw", "getRecords", { userId, limit }),
-};
-
-/**
  * 广告相关API
  */
 const adApi = {
@@ -219,6 +266,5 @@ module.exports = {
   CLOUD_CONFIG,
   userApi,
   gameApi,
-  withdrawApi,
   adApi,
 };

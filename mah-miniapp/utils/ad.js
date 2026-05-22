@@ -1,11 +1,15 @@
 /**
- * 抖音广告管理 - 完整版本
+ * 跨平台广告管理
+ *
+ * 支持：抖音小游戏、微信小游戏、H5/Web（模拟）
  *
  * 使用说明：
- * 1. 在抖音开发者后台创建广告位，获取真实的 adUnitId
+ * 1. 在开发者后台创建广告位，获取真实的 adUnitId
  * 2. 将 ADS_ENABLED 改为 true
  * 3. 替换下方 xxx 为真实广告位ID
  */
+
+const platform = require('./platform');
 
 // 广告是否已启用（有真实adUnitId时改为true）
 const ADS_ENABLED = false;
@@ -49,7 +53,7 @@ async function initAds() {
 
   try {
     // 初始化激励视频广告
-    rewardedVideoAd = tt.createRewardedVideoAd({
+    rewardedVideoAd = platform.createRewardedVideoAd({
       adUnitId: AD_UNIT_IDS.rewarded,
     });
 
@@ -80,7 +84,7 @@ async function initAds() {
     });
 
     // 初始化插屏广告
-    interstitialAd = tt.createInterstitialAd({
+    interstitialAd = platform.createInterstitialAd({
       adUnitId: AD_UNIT_IDS.interstitial,
     });
 

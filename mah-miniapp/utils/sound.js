@@ -1,7 +1,9 @@
 /**
  * 音效管理工具
- * 使用 Web Audio API 或 tt.createInnerAudioContext 播放音效
+ * 跨平台支持：抖音小游戏、微信小游戏、H5/Web、Android APK
  */
+
+const platform = require('./platform');
 
 /** 音效配置 */
 const SOUND_CONFIG = {
@@ -48,8 +50,8 @@ let soundEnabled = true;
 function initSound() {
   // 从本地存储读取音效开关状态
   try {
-    const enabled = tt.getStorageSync('soundEnabled');
-    if (enabled !== '') {
+    const enabled = platform.getStorage('soundEnabled');
+    if (enabled !== null && enabled !== '') {
       soundEnabled = enabled === true || enabled === 'true';
     }
   } catch (e) {
@@ -79,7 +81,7 @@ function getSoundInstance(name) {
   }
 
   try {
-    const audio = tt.createInnerAudioContext();
+    const audio = platform.createInnerAudioContext();
     audio.src = config.src;
     audio.volume = config.volume;
 
@@ -120,7 +122,7 @@ function playSound(name) {
 function setSoundEnabled(enabled) {
   soundEnabled = enabled;
   try {
-    tt.setStorageSync('soundEnabled', enabled);
+    platform.setStorage('soundEnabled', enabled);
   } catch (e) {
     console.warn('保存音效开关状态失败:', e);
   }

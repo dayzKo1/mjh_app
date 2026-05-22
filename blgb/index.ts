@@ -7,13 +7,6 @@ const GAME_CONFIG = {
   maxLevel: 100,
   maxTime: 3600,
   maxRecordsPerHour: 100,
-  maxCommissionPerDay: 100,
-};
-
-const WITHDRAW_CONFIG = {
-  minAmount: 1,
-  maxAmount: 100,
-  dailyLimit: 3,
 };
 
 const AD_CONFIG = {
@@ -73,8 +66,6 @@ async function login(params: any, context: any, db: any, _: any) {
         inviterId: '',
         level: 1,
         score: 0,
-        commission: 0,
-        totalWithdraw: 0,
         createTime: db.serverDate(),
         updateTime: db.serverDate(),
         lastLoginTime: db.serverDate(),
@@ -265,91 +256,6 @@ async function getInviteList(params: any, context: any, db: any, _: any) {
 }
 
 /**
- * 计算分佣
- * 扁平化逐级独立检查
- */
-async function calculateCommission(userId: string, amount: number, userData: any, db: any, _: any) {
-  try {
-    if (!userData || !userData.inviterId) {
-      return;
-    }
-
-    const totalCommissionRate = 0.1 + 0.05 + 0.02;
-    const potentialCommission = Math.round(amount * totalCommissionRate * 0.01 * 100) / 100;
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const commissionRecordsCollection = db.collection('commission_records');
-    const todayCommissions = await commissionRecordsCollection
-      .where({
-        triggerUserId: userId,
-        createTime: _.gte(today),
-      })
-      .get();
-
-    const todayTotal = (todayCommissions.data || []).reduce((sum: number, r: any) => sum + r.amount, 0);
-
-    if (todayTotal + potentialCommission > GAME_CONFIG.maxCommissionPerDay) {
-      return;
-    }
-
-    const commissionRecord: any = {
-      triggerUserId: userId,
-      amount: potentialCommission,
-      createTime: db.serverDate(),
-    };
-
-    const usersCollection = db.collection('users');
-    const inviterChain: any[] = [];
-    let currentInviterId = userData.inviterId;
-
-    for (let depth = 0; depth < 3 && currentInviterId; depth++) {
-      const inviterUser = await usersCollection.doc(currentInviterId).get();
-
-      if (!inviterUser.data) {
-        break;
-      }
-
-      inviterChain.push({
-        id: currentInviterId,
-        userType: inviterUser.data.userType,
-        nextInviterId: inviterUser.data.inviterId || '',
-      });
-
-      currentInviterId = inviterUser.data.inviterId || '';
-    }
-
-    const rates = [0.1, 0.05, 0.02];
-    const levelKeys = [
-      { idKey: 'level1Id', amountKey: 'level1Amount' },
-      { idKey: 'level2Id', amountKey: 'level2Amount' },
-      { idKey: 'level3Id', amountKey: 'level3Amount' },
-    ];
-
-    for (let i = 0; i < inviterChain.length; i++) {
-      const inviter = inviterChain[i];
-
-      if (inviter.userType === 'A') {
-        const commission = Math.round(amount * rates[i] * 0.01 * 100) / 100;
-
-        await usersCollection.doc(inviter.id).update({
-          commission: _.inc(commission),
-          updateTime: db.serverDate(),
-        });
-
-        commissionRecord[levelKeys[i].idKey] = inviter.id;
-        commissionRecord[levelKeys[i].amountKey] = commission;
-      }
-    }
-
-    await commissionRecordsCollection.add(commissionRecord);
-  } catch (error: any) {
-    console.error('[calculateCommission] 分佣计算失败', { userId, amount, error: error.message });
-  }
-}
-
-/**
  * 保存游戏记录
  */
 async function saveRecord(params: any, context: any, db: any, _: any) {
@@ -406,10 +312,6 @@ async function saveRecord(params: any, context: any, db: any, _: any) {
       }
 
       await usersCollection.doc(userId).update(updateData);
-
-      if (userResult.data.userType === 'A') {
-        await calculateCommission(userId, score, userResult.data, db, _);
-      }
     }
 
     return { code: 0, message: '保存成功' };
@@ -470,7 +372,6 @@ async function getRank(params: any, context: any, db: any, _: any) {
         nickName: true,
         avatarUrl: true,
         score: true,
-        commission: true,
       })
       .get();
 
@@ -482,6 +383,81 @@ async function getRank(params: any, context: any, db: any, _: any) {
     return { code: 0, message: '获取成功', data };
   } catch (error: any) {
     return { code: -1, message: '获取失败', error: error.message };
+  }
+}
+
+/**
+ * 获取用户关卡进度
+ */
+async function getProgress(params: any, context: any, db: any, _: any) {
+  const { userId } = params;
+
+  try {
+    if (!userId || typeof userId !== 'string') {
+      return { code: -1, message: '用户ID无效' };
+    }
+
+    const progressCollection = db.collection('user_progress');
+    const progressResult = await progressCollection
+      .where({ userId })
+      .limit(1)
+      .get();
+
+    let progress = {
+      completedLevels: [],
+      bestScores: {},
+      unlockedLevel: 1,
+    };
+
+    if (progressResult.data && progressResult.data.length > 0) {
+      progress = progressResult.data[0];
+    }
+
+    return { code: 0, message: '获取成功', data: progress };
+  } catch (error: any) {
+    return { code: -1, message: '获取失败', error: error.message };
+  }
+}
+
+/**
+ * 更新用户关卡进度
+ */
+async function updateProgress(params: any, context: any, db: any, _: any) {
+  const { userId, progress } = params;
+
+  try {
+    if (!userId || typeof userId !== 'string') {
+      return { code: -1, message: '用户ID无效' };
+    }
+
+    if (!progress || typeof progress !== 'object') {
+      return { code: -1, message: '进度数据无效' };
+    }
+
+    const progressCollection = db.collection('user_progress');
+    const existingResult = await progressCollection
+      .where({ userId })
+      .limit(1)
+      .get();
+
+    const updateData: any = {
+      completedLevels: progress.completedLevels || [],
+      bestScores: progress.bestScores || {},
+      unlockedLevel: progress.unlockedLevel || 1,
+      updateTime: db.serverDate(),
+    };
+
+    if (existingResult.data && existingResult.data.length > 0) {
+      await progressCollection.doc(existingResult.data[0]._id).update(updateData);
+    } else {
+      updateData.userId = userId;
+      updateData.createTime = db.serverDate();
+      await progressCollection.add(updateData);
+    }
+
+    return { code: 0, message: '更新成功' };
+  } catch (error: any) {
+    return { code: -1, message: '更新失败', error: error.message };
   }
 }
 
@@ -500,223 +476,6 @@ async function getLevelConfig(params: any, context: any, db: any, _: any) {
     };
 
     return { code: 0, message: '获取成功', data: config };
-  } catch (error: any) {
-    return { code: -1, message: '获取失败', error: error.message };
-  }
-}
-
-/**
- * 申请提现
- * 先扣佣金再创建记录，使用乐观锁机制
- */
-async function withdrawApply(params: any, context: any, db: any, _: any) {
-  const { userId, amount } = params;
-
-  try {
-    if (!userId || typeof userId !== 'string') {
-      return { code: -1, message: '用户ID无效' };
-    }
-    if (typeof amount !== 'number' || amount <= 0) {
-      return { code: -1, message: '提现金额无效' };
-    }
-
-    const usersCollection = db.collection('users');
-    const userResult = await usersCollection.doc(userId).get();
-    if (!userResult.data) {
-      return { code: -1, message: '用户不存在' };
-    }
-
-    const user = userResult.data;
-
-    if (user.userType !== 'A') {
-      return { code: -1, message: 'B类用户不可提现' };
-    }
-
-    if (amount < WITHDRAW_CONFIG.minAmount) {
-      return { code: -1, message: `最低提现金额为${WITHDRAW_CONFIG.minAmount}元` };
-    }
-
-    if (amount > WITHDRAW_CONFIG.maxAmount) {
-      return { code: -1, message: `单次最高提现金额为${WITHDRAW_CONFIG.maxAmount}元` };
-    }
-
-    if (amount > user.commission) {
-      return { code: -1, message: '佣金余额不足' };
-    }
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const withdrawRecordsCollection = db.collection('withdraw_records');
-    const todayRecords = await withdrawRecordsCollection
-      .where({
-        userId,
-        applyTime: _.gte(today),
-        status: _.in(['pending', 'approved']),
-      })
-      .count();
-
-    if (todayRecords.total >= WITHDRAW_CONFIG.dailyLimit) {
-      return { code: -1, message: `每日最多提现${WITHDRAW_CONFIG.dailyLimit}次` };
-    }
-
-    const updateResult = await usersCollection
-      .where({
-        _id: userId,
-        commission: _.gte(amount),
-      })
-      .update({
-        commission: _.inc(-amount),
-        updateTime: db.serverDate(),
-      });
-
-    if (updateResult.updated === 0) {
-      return { code: -1, message: '佣金余额不足或已被其他操作占用' };
-    }
-
-    const record: any = {
-      userId,
-      amount,
-      status: 'pending',
-      applyTime: db.serverDate(),
-      processTime: null,
-      reason: '',
-    };
-
-    try {
-      const result = await withdrawRecordsCollection.add(record);
-
-      return {
-        code: 0,
-        message: '申请成功，等待审核',
-        data: { recordId: result.id },
-      };
-    } catch (addError: any) {
-      await usersCollection.doc(userId).update({
-        commission: _.inc(amount),
-        updateTime: db.serverDate(),
-      });
-      return { code: -1, message: '申请失败，请重试' };
-    }
-  } catch (error: any) {
-    return { code: -1, message: '申请失败', error: error.message };
-  }
-}
-
-/**
- * 获取提现记录
- */
-async function getWithdrawRecords(params: any, context: any, db: any, _: any) {
-  const { userId, limit = 50 } = params;
-
-  try {
-    if (!userId || typeof userId !== 'string') {
-      return { code: -1, message: '用户ID无效' };
-    }
-
-    const result = await db.collection('withdraw_records')
-      .where({ userId })
-      .orderBy('applyTime', 'desc')
-      .limit(limit)
-      .get();
-
-    return {
-      code: 0,
-      message: '获取成功',
-      data: result.data || [],
-    };
-  } catch (error: any) {
-    return { code: -1, message: '获取失败', error: error.message };
-  }
-}
-
-/**
- * 处理提现（管理员操作）
- */
-async function withdrawProcess(params: any, context: any, db: any, _: any) {
-  const { recordId, status, reason = '' } = params;
-
-  try {
-    if (!recordId || typeof recordId !== 'string') {
-      return { code: -1, message: '提现记录ID无效' };
-    }
-    if (!['approved', 'rejected'].includes(status)) {
-      return { code: -1, message: '状态参数无效' };
-    }
-
-    const withdrawRecordsCollection = db.collection('withdraw_records');
-    const recordResult = await withdrawRecordsCollection.doc(recordId).get();
-    if (!recordResult.data) {
-      return { code: -1, message: '提现记录不存在' };
-    }
-
-    const record = recordResult.data;
-
-    const updateResult = await withdrawRecordsCollection
-      .where({
-        _id: recordId,
-        status: 'pending',
-      })
-      .update({
-        status,
-        processTime: db.serverDate(),
-        reason: reason || '',
-      });
-
-    if (updateResult.updated === 0) {
-      return { code: -1, message: '该记录已被处理，请刷新页面' };
-    }
-
-    const usersCollection = db.collection('users');
-    if (status === 'rejected') {
-      await usersCollection.doc(record.userId).update({
-        commission: _.inc(record.amount),
-        updateTime: db.serverDate(),
-      });
-    } else {
-      await usersCollection.doc(record.userId).update({
-        totalWithdraw: _.inc(record.amount),
-        updateTime: db.serverDate(),
-      });
-    }
-
-    return { code: 0, message: '处理成功' };
-  } catch (error: any) {
-    return { code: -1, message: '处理失败', error: error.message };
-  }
-}
-
-/**
- * 获取待审核提现列表（管理员）
- */
-async function getPendingList(params: any, context: any, db: any, _: any) {
-  const { limit = 100 } = params;
-
-  try {
-    const withdrawRecordsCollection = db.collection('withdraw_records');
-    const result = await withdrawRecordsCollection
-      .where({ status: 'pending' })
-      .orderBy('applyTime', 'asc')
-      .limit(limit)
-      .get();
-
-    const records = result.data || [];
-    const userIds = [...new Set(records.map((r: any) => r.userId))];
-    const usersCollection = db.collection('users');
-    const usersResult = await usersCollection.where({
-      _id: _.in(userIds),
-    }).get();
-
-    const usersMap: any = {};
-    (usersResult.data || []).forEach((u: any) => {
-      usersMap[u._id] = u;
-    });
-
-    const data = records.map((r: any) => ({
-      ...r,
-      user: usersMap[r.userId] || {},
-    }));
-
-    return { code: 0, message: '获取成功', data };
   } catch (error: any) {
     return { code: -1, message: '获取失败', error: error.message };
   }
@@ -743,25 +502,11 @@ async function adReport(params: any, context: any, db: any, _: any) {
       return { code: -1, message: '用户不存在' };
     }
 
-    const user = userResult.data;
     const adRecordsCollection = db.collection('ad_records');
 
     if (adType === 'rewarded') {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-
-      const record: any = {
-        userId,
-        adType,
-        reward: 0,
-        createTime: db.serverDate(),
-      };
-
-      if (AD_CONFIG.rewarded.reward > 0 && user.userType === 'A') {
-        record.reward = AD_CONFIG.rewarded.reward;
-      }
-
-      await adRecordsCollection.add(record);
 
       const todayRecords = await adRecordsCollection
         .where({
@@ -771,26 +516,27 @@ async function adReport(params: any, context: any, db: any, _: any) {
         })
         .count();
 
-      if (todayRecords.total > AD_CONFIG.rewarded.dailyLimit) {
-        await adRecordsCollection.doc(record._id || record.id).remove();
+      if (todayRecords.total >= AD_CONFIG.rewarded.dailyLimit) {
         return { code: -1, message: '今日观看次数已达上限' };
       }
 
-      if (record.reward > 0) {
-        await usersCollection.doc(userId).update({
-          commission: _.inc(record.reward),
-          updateTime: db.serverDate(),
-        });
-      }
+      const record = {
+        userId,
+        adType,
+        reward: 0,
+        createTime: db.serverDate(),
+      };
+
+      await adRecordsCollection.add(record);
 
       return {
         code: 0,
         message: '上报成功',
-        data: { reward: record.reward },
+        data: { reward: 0 },
       };
     }
 
-    const record: any = {
+    const record = {
       userId,
       adType,
       reward: 0,
@@ -971,13 +717,6 @@ async function getUserDetail(params: any, context: any, db: any, _: any) {
       .get();
     const gameRecords = gameResult.data || [];
 
-    const withdrawResult = await db.collection('withdraw_records')
-      .where({ userId })
-      .orderBy('applyTime', 'desc')
-      .limit(20)
-      .get();
-    const withdrawRecords = withdrawResult.data || [];
-
     return {
       code: 0,
       message: '获取成功',
@@ -986,7 +725,6 @@ async function getUserDetail(params: any, context: any, db: any, _: any) {
         inviter,
         inviteList: { level1: level1Users },
         gameRecords,
-        withdrawRecords,
       },
     };
   } catch (error: any) {
@@ -1025,16 +763,6 @@ async function getStatistics(params: any, context: any, db: any, _: any) {
     const totalGames = gameRecords.data || [];
     const totalScore = totalGames.reduce((sum: number, r: any) => sum + r.score, 0);
 
-    const withdrawRecords = await db.collection('withdraw_records')
-      .where({
-        applyTime: _.and(_.gte(start), _.lte(end)),
-        status: 'approved',
-      })
-      .get();
-
-    const approvedWithdraws = withdrawRecords.data || [];
-    const totalWithdraw = approvedWithdraws.reduce((sum: number, r: any) => sum + r.amount, 0);
-
     const adRecords = await db.collection('ad_records')
       .where({
         createTime: _.and(_.gte(start), _.lte(end)),
@@ -1054,10 +782,6 @@ async function getStatistics(params: any, context: any, db: any, _: any) {
       games: {
         total: totalGames.length,
         totalScore,
-      },
-      withdraw: {
-        total: totalWithdraw,
-        count: approvedWithdraws.length,
       },
       ads: {
         total: totalAds.length,
@@ -1091,122 +815,14 @@ async function updateUserType(params: any, context: any, db: any, _: any) {
       return { code: -1, message: '用户不存在' };
     }
 
-    const currentUser = userResult.data;
+    await usersCollection.doc(userId).update({
+      userType,
+      updateTime: db.serverDate(),
+    });
 
-    if (currentUser.userType === 'A' && userType === 'B') {
-      const withdrawRecordsCollection = db.collection('withdraw_records');
-      const pendingWithdraws = await withdrawRecordsCollection
-        .where({
-          userId,
-          status: 'pending',
-        })
-        .get();
-
-      const pendingRecords = pendingWithdraws.data || [];
-      let totalPendingAmount = 0;
-
-      for (const record of pendingRecords) {
-        totalPendingAmount += record.amount;
-        await withdrawRecordsCollection.doc(record._id).update({
-          status: 'rejected',
-          processTime: db.serverDate(),
-          reason: '用户被降级为B类，提现申请自动拒绝',
-        });
-        await usersCollection.doc(userId).update({
-          commission: _.inc(record.amount),
-          updateTime: db.serverDate(),
-        });
-      }
-
-      const currentCommission = currentUser.commission || 0;
-      await usersCollection.doc(userId).update({
-        userType: 'B',
-        commission: _.inc(-currentCommission),
-        updateTime: db.serverDate(),
-      });
-
-      return {
-        code: 0,
-        message: '降级成功，已清零佣金并拒绝所有待审核提现',
-        data: {
-          rejectedCount: pendingRecords.length,
-          refundedAmount: totalPendingAmount,
-        },
-      };
-    } else {
-      await usersCollection.doc(userId).update({
-        userType,
-        updateTime: db.serverDate(),
-      });
-
-      return { code: 0, message: '更新成功' };
-    }
+    return { code: 0, message: '更新成功' };
   } catch (error: any) {
     return { code: -1, message: '更新失败', error: error.message };
-  }
-}
-
-/**
- * 获取提现统计（管理员）
- */
-async function getWithdrawStatistics(params: any, context: any, db: any, _: any) {
-  const { status } = params;
-
-  try {
-    let query: any = {};
-    if (status) {
-      query.status = status;
-    }
-
-    const withdrawRecordsCollection = db.collection('withdraw_records');
-    const records = await withdrawRecordsCollection
-      .where(query)
-      .orderBy('applyTime', 'desc')
-      .limit(100)
-      .get();
-
-    const data = records.data || [];
-
-    const userIds = [...new Set(data.map((r: any) => r.userId))];
-    const usersCollection = db.collection('users');
-    const usersResult = await usersCollection.where({
-      _id: _.in(userIds),
-    }).get();
-
-    const usersMap: any = {};
-    (usersResult.data || []).forEach((u: any) => {
-      usersMap[u._id] = u;
-    });
-
-    const recordsWithUser = data.map((r: any) => ({
-      ...r,
-      user: usersMap[r.userId] || {},
-    }));
-
-    const statistics: any = {
-      pending: 0,
-      approved: 0,
-      rejected: 0,
-      totalAmount: 0,
-    };
-
-    data.forEach((r: any) => {
-      statistics[r.status]++;
-      if (r.status === 'approved') {
-        statistics.totalAmount += r.amount;
-      }
-    });
-
-    return {
-      code: 0,
-      message: '获取成功',
-      data: {
-        records: recordsWithUser,
-        statistics,
-      },
-    };
-  } catch (error: any) {
-    return { code: -1, message: '获取失败', error: error.message };
   }
 }
 
@@ -1323,9 +939,8 @@ export default async function (params: any, context: any) {
   }
 
   const ADMIN_ACTIONS: Record<string, string[]> = {
-    withdraw: ['process', 'getPendingList'],
     ad: ['getStatistics'],
-    admin: ['verifyToken', 'getUserList', 'getUserDetail', 'getStatistics', 'updateUserType', 'getWithdrawStatistics'],
+    admin: ['verifyToken', 'getUserList', 'getUserDetail', 'getStatistics', 'updateUserType'],
   };
 
   if (ADMIN_ACTIONS[moduleName] && ADMIN_ACTIONS[moduleName].includes(action)) {
@@ -1336,7 +951,6 @@ export default async function (params: any, context: any) {
 
   const AUTH_REQUIRED_ACTIONS: Record<string, string[]> = {
     game: ['saveRecord', 'getUserRecords'],
-    withdraw: ['apply', 'getRecords'],
     ad: ['report'],
   };
 
@@ -1356,18 +970,14 @@ export default async function (params: any, context: any) {
       bindInviter,
       getInviteList,
       contentCheck,
+      getProgress,
+      updateProgress,
     },
     game: {
       saveRecord,
       getUserRecords,
       getRank,
       getLevelConfig,
-    },
-    withdraw: {
-      apply: withdrawApply,
-      getRecords: getWithdrawRecords,
-      process: withdrawProcess,
-      getPendingList,
     },
     ad: {
       report: adReport,
@@ -1380,7 +990,6 @@ export default async function (params: any, context: any) {
       getUserDetail,
       getStatistics,
       updateUserType,
-      getWithdrawStatistics,
     },
   };
 

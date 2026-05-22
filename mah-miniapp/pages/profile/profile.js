@@ -1,16 +1,14 @@
 /**
  * 个人中心页面
- * 展示用户信息、资产数据、游戏记录及功能入口
+ * 展示用户信息、游戏记录及功能入口
  */
 
-const { userApi, gameApi, withdrawApi } = require('../../services/api');
+const { userApi, gameApi } = require('../../services/api');
 
 Page({
   data: {
     userInfo: null,
     userId: '',
-    commission: 0,
-    totalWithdraw: 0,
     userType: 'B',
     maxLevel: 1,
     totalScore: 0,
@@ -59,8 +57,6 @@ Page({
       this.setData({
         userInfo: userData,
         userType: userData.userType || 'B',
-        commission: userData.commission || 0,
-        totalWithdraw: userData.totalWithdraw || 0,
         maxLevel,
         totalScore,
         totalGames,
@@ -81,13 +77,6 @@ Page({
     const page = e.currentTarget.dataset.page;
     if (!page) return;
     tt.navigateTo({ url: page });
-  },
-
-  /**
-   * 跳转到提现页面
-   */
-  onWithdraw() {
-    tt.navigateTo({ url: '/pages/withdraw/withdraw' });
   },
 
   /**
@@ -118,7 +107,7 @@ Page({
   onAbout() {
     tt.showModal({
       title: '关于',
-      content: '中国龙2 - 麻将消消乐\n一款休闲益智的麻将消除游戏\n邀请好友即可赚取佣金！',
+      content: '中国龙2 - 麻将消消乐\n一款休闲益智的麻将消除游戏',
       showCancel: false,
     });
   },
